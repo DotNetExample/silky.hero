@@ -53,6 +53,7 @@ public class PositionAppService : IPositionAppService
         return _positionDomainService.PositionRepository
             .Where(!input.Name.IsNullOrEmpty(), p => p.Name.Contains(input.Name))
             .Where(input.Status.HasValue, p => p.Status == input.Status)
+            .OrderByDescending(p=> p.Sort)
             .ProjectToType<GetPositionPageOutput>()
             .ToPagedListAsync(input.PageIndex, input.PageSize);
     }
