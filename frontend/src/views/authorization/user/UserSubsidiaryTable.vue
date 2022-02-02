@@ -9,8 +9,12 @@
   </div>
 </template>
 <script lang="ts">
-  import { defineComponent } from 'vue';
+  import { defineComponent, ref, unref } from 'vue';
   import { useMessage } from '/@/hooks/web/useMessage';
+  import { OptionsItem } from '/@/utils/model';
+  import { getPositionOptions } from '/@/views/authorization/position/position.data';
+  import { getOrganizationTreeList } from '/@/views/authorization/organization/organization.data';
+  import { TreeItem } from '/@/components/Tree';
   import {
     BasicTable,
     useTable,
@@ -20,15 +24,11 @@
     EditRecordRow,
   } from '/@/components/Table';
 
-  const props = {
-    positionOptions: [],
-    organizationTreeList: [],
-  };
-
   export default defineComponent({
     components: { BasicTable, TableAction },
-    props,
-    setup(props) {
+    setup() {
+      const positionOptions = ref<OptionsItem[]>([]);
+      const organizationTreeList = ref<TreeItem[]>([]);
       const columns: BasicColumn[] = [
         {
           title: '所属部门',
@@ -36,9 +36,18 @@
           editRow: true,
           editComponent: 'TreeSelect',
           editComponentProps: {
-            treeData: props.organizationTreeList,
+            treeData: unref(organizationTreeList),
             treeDefaultExpandAll: true,
             placeholder: '请选择所属部门',
+            onChange: async (key) => {
+              const editRow = getDataSource().find((item) => item.editable === true);
+              if (editRow) {
+                editRow.positionId = null;
+                editRow.positionName = null;
+                updateTableDataRecord(editRow.key, editRow);
+              }
+              await setDisablePositionColumnOptions(key);
+            },
           },
         },
         {
@@ -47,13 +56,55 @@
           editRow: true,
           editComponent: 'Select',
           editComponentProps: {
-            options: props.positionOptions,
+            options: unref(positionOptions),
             placeholder: '请选择所属岗位',
           },
         },
       ];
+
+      const setPositionColumnOptions = async () => {
+        positionOptions.value = await getPositionOptions({});
+        const tableColumns = getColumns();
+        const positionColumn = tableColumns.find((col) => col.dataIndex === 'positionId');
+        positionColumn.editComponentProps.options = unref(positionOptions);
+        setProps({
+          columns: tableColumns,
+        });
+      };
+
+      const setDisablePositionColumnOptions = async (organizationId: number) => {
+        const organizationPositions = await getPositionOptions({ organizationId: organizationId });
+        unref(positionOptions).map((item) => {
+          if (organizationPositions.find((o) => o.value == item.value) != null) {
+            item.disabled = false;
+          } else {
+            item.disabled = true;
+          }
+          return item;
+        });
+        // const tableColumns = getColumns();
+        // const positionColumn = tableColumns.find((col) => col.dataIndex === 'positionId');
+        // positionColumn?.editComponentProps.options = organizationPositionOptions;
+        // setProps({
+        //   columns: tableColumns,
+        // });
+      };
+
+      const setOrganizationColumnData = async () => {
+        const treeData = await getOrganizationTreeList();
+        const tableColumns = getColumns();
+        const organizationColumn = tableColumns.find((col) => col.dataIndex === 'organizationId');
+        organizationColumn.editComponentProps.treeData = treeData;
+        setProps({
+          columns: tableColumns,
+        });
+      };
+
       const { notification } = useMessage();
-      const [registerTable, { getDataSource, setTableData, getRawDataSource }] = useTable({
+      const [
+        registerTable,
+        { getDataSource, setTableData, setProps, getColumns, updateTableDataRecord },
+      ] = useTable({
         columns: columns,
         showIndexColumn: false,
         actionColumn: {
@@ -65,8 +116,9 @@
         pagination: false,
       });
 
-      function handleEdit(record: EditRecordRow) {
+      async function handleEdit(record: EditRecordRow) {
         record.onEdit?.(true);
+        await setDisablePositionColumnOptions(record.organizationId);
       }
 
       function handleCancel(record: EditRecordRow) {
@@ -130,8 +182,8 @@
       function handleAdd() {
         const data = getDataSource();
         const addRow: EditRecordRow = {
-          organizationId: undefined,
-          positionId: undefined,
+          organizationId: null,
+          positionId: null,
           editable: true,
           isNew: true,
           key: `${Date.now()}`,
@@ -176,9 +228,10 @@
         createActions,
         handleAdd,
         getDataSource,
-        getRawDataSource,
         setTableData,
         handleEditChange,
+        setPositionColumnOptions,
+        setOrganizationColumnData,
       };
     },
   });

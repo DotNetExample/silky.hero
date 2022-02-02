@@ -66,9 +66,10 @@ public interface IPositionAppService
     /// <summary>
     /// 不分页查询职位信息
     /// </summary>
+    /// <param name="organizationId"></param>
     /// <param name="name"></param>
     /// <returns></returns>
-    Task<ICollection<GetPositionOutput>> GetListAsync([FromQuery]string name);
+    Task<ICollection<GetPositionOutput>> GetListAsync([FromQuery]long? organizationId, [FromQuery]string name);
 
     /// <summary>
     /// 判断是否存在职位

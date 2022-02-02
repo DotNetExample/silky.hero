@@ -34,13 +34,18 @@ public class PositionAppService : IPositionAppService
 
     public async Task<GetPositionOutput> GetAsync(long id)
     {
-        var position = await _positionDomainService.PositionRepository.FindOrDefaultAsync(id);
+        var position = await _positionDomainService.PositionRepository
+            .AsQueryable(false)
+            .Include(p => p.PositionOrganizations)
+            .FirstOrDefaultAsync(p => p.Id == id);
         if (position == null)
         {
             throw new UserFriendlyException($"不存在id为{id}的职位信息");
         }
 
-        return position.Adapt<GetPositionOutput>();
+        var positionOutput = position.Adapt<GetPositionOutput>();
+        await positionOutput.SetOrganization();
+        return positionOutput;
     }
 
     public Task DeleteAsync(long id)
@@ -48,14 +53,22 @@ public class PositionAppService : IPositionAppService
         return _positionDomainService.DeleteAsync(id);
     }
 
-    public Task<PagedList<GetPositionPageOutput>> GetPageAsync(GetPositionPageInput input)
+    public async Task<PagedList<GetPositionPageOutput>> GetPageAsync(GetPositionPageInput input)
     {
-        return _positionDomainService.PositionRepository
+        var pageList = await _positionDomainService.PositionRepository
+            .AsQueryable(false)
+            .Include(p => p.PositionOrganizations)
             .Where(!input.Name.IsNullOrEmpty(), p => p.Name.Contains(input.Name))
             .Where(input.Status.HasValue, p => p.Status == input.Status)
-            .OrderByDescending(p=> p.Sort)
+            .OrderByDescending(p => p.Sort)
             .ProjectToType<GetPositionPageOutput>()
             .ToPagedListAsync(input.PageIndex, input.PageSize);
+        foreach (var item in pageList.Items)
+        {
+            await item.SetOrganization();
+        }
+
+        return pageList;
     }
 
     public async Task<bool> HasPositionAsync(long positionId)
@@ -63,13 +76,22 @@ public class PositionAppService : IPositionAppService
         return await _positionDomainService.PositionRepository.FindOrDefaultAsync(positionId) != null;
     }
 
-    public async Task<ICollection<GetPositionOutput>> GetListAsync(string name)
+    public async Task<ICollection<GetPositionOutput>> GetListAsync(long? organizationId, string name)
     {
-        return await _positionDomainService.PositionRepository
+        var list = await _positionDomainService.PositionRepository
             .AsQueryable(false)
+            .Include(p => p.PositionOrganizations)
+            .Where(organizationId.HasValue,
+                p => p.IsPublic || p.PositionOrganizations.Any(po => po.OrganizationId == organizationId))
             .Where(!name.IsNullOrEmpty(), p => p.Name.Contains(name))
             .Where(p => p.Status == Status.Valid)
             .ProjectToType<GetPositionOutput>()
             .ToListAsync();
+        foreach (var item in list)
+        {
+            await item.SetOrganization();
+        }
+
+        return list;
     }
 }

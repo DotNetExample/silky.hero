@@ -327,6 +327,13 @@ public class IdentityUserManager : UserManager<IdentityUser>
             .CountAsync(p => p.UserSubsidiaries.Any(us => us.OrganizationId == organizationId));
         return userCount > 0;
     }
+    
+    public async Task<bool> HasSubsidiaryUsersAsync(long organizationId, long positionId)
+    {
+        var userCount = await UserRepository.Include(p => p.UserSubsidiaries)
+            .CountAsync(p => p.UserSubsidiaries.Any(us => us.OrganizationId == organizationId && us.PositionId == positionId));
+        return userCount > 0;
+    }
 
     public async Task<bool> HasPositionUsersAsync(long positionId)
     {
@@ -444,4 +451,5 @@ public class IdentityUserManager : UserManager<IdentityUser>
         return await UserRepository.GetRolesAsync(user.Id).Where(p => p.Status == Status.Valid).Select(p => p.Name)
             .ToListAsync();
     }
+    
 }

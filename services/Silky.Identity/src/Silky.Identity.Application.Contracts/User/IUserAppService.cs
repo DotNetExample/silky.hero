@@ -158,6 +158,9 @@ public interface IUserAppService
     /// <returns></returns>
     [ProhibitExtranet]
     Task<bool> HasPositionUsersAsync(long positionId);
+    
+    [ProhibitExtranet]
+    Task<bool> HasSubsidiaryUsersAsync(long organizationId,long positionId);
 
     /// <summary>
     /// 通过用户Id获取角色Ids

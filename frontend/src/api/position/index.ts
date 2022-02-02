@@ -9,10 +9,10 @@ enum Api {
   Position = '/position',
 }
 
-export const getPositionList = (query: any) => {
+export const getPositionList = (requestParams: any) => {
   return defHttp.get<GetPositionModel[]>({
     url: Api.GetPositionList,
-    params: { name: query.name },
+    params: requestParams,
   });
 };
 

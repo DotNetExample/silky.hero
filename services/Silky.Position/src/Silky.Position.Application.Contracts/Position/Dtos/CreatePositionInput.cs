@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace Silky.Position.Application.Contracts.Position.Dtos;
 
 /// <summary>
@@ -5,5 +7,10 @@ namespace Silky.Position.Application.Contracts.Position.Dtos;
 /// </summary>
 public class CreatePositionInput : PositionDtoBase
 {
- 
+    public CreatePositionInput()
+    {
+        OrganizationIds = new List<long>();
+    }
+
+    public ICollection<long> OrganizationIds { get; set; }
 }

@@ -1,7 +1,6 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using org.apache.zookeeper;
 using Silky.EntityFrameworkCore.Entities.Configures;
 using Silky.Hero.Common.EntityFrameworkCore.Modeling;
 using Silky.Hero.Common.Enums;
@@ -25,6 +24,9 @@ public class PositionTypeBuilder : IEntityTypeBuilder<Position>
         entityBuilder.Property(o => o.Remark)
             .HasMaxLength(PositionConsts.MaxRemarkLength)
             .HasColumnName(nameof(Position.Remark));
+        entityBuilder.Property(o => o.IsPublic)
+            .IsRequired()
+            .HasColumnName(nameof(Position.IsPublic));
         entityBuilder.Property(o => o.Status)
             .IsRequired()
             .HasDefaultValue(Status.Valid)

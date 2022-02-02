@@ -169,6 +169,11 @@ public class UserAppService : IUserAppService
         return UserManager.HasPositionUsersAsync(positionId);
     }
 
+    public Task<bool> HasSubsidiaryUsersAsync(long organizationId, long positionId)
+    {
+        return UserManager.HasSubsidiaryUsersAsync(organizationId,positionId);
+    }
+
     public async Task<ICollection<long>> GetValidRoleIdsAsync(long userId)
     {
         return await UserManager.UserRepository

@@ -1,6 +1,6 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using Silky.Hero.Common.Enums;
-using Silky.Rpc.CachingInterceptor;
 
 namespace Silky.Position.Application.Contracts.Position.Dtos;
 
@@ -27,4 +27,11 @@ public abstract class PositionDtoBase
     /// 状态
     /// </summary>
     public Status Status { get; set; }
+
+    /// <summary>
+    /// 公共岗位
+    /// </summary>
+    public bool IsPublic { get; set; }
+
+    public ICollection<GetPositionOrganizationOutput> PositionOrganizations { get; set; }
 }
