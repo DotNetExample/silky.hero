@@ -27,6 +27,8 @@
     ActionItem,
     EditRecordRow,
   } from '/@/components/Table';
+  import { checkOrganizationDataRange } from '/@/api/organization';
+  import { checkPositionDataRange } from '/@/api/position';
 
   export default defineComponent({
     components: { BasicTable, TableAction },
@@ -44,6 +46,23 @@
           title: '所属部门',
           dataIndex: 'organizationId',
           editRow: true,
+          editRule: async (text, record) => {
+            if (!text) {
+              notification.error({
+                message: '请选择用户所属部门',
+              });
+              return Promise.reject('请选择用户所属部门');
+            }
+            if (!(await checkOrganizationDataRange(Number(text)))) {
+              notification.error({
+                message: '您没有新增该部门用户的权限',
+              });
+              record.positionId = null;
+              await setPositionOptions(text);
+              return Promise.reject('您没有新增该部门用户的权限');
+            }
+            return Promise.resolve('');
+          },
           editComponent: 'TreeSelect',
           editComponentProps: {
             treeData: unref(organizaionTreeList),
@@ -56,6 +75,21 @@
           dataIndex: 'positionId',
           editRow: true,
           editComponent: 'Select',
+          editRule: async (text, record) => {
+            if (!text) {
+              notification.error({
+                message: '请选择用户所属岗位',
+              });
+              return Promise.reject('请选择用户所属岗位');
+            }
+            if (!(await checkPositionDataRange(Number(record.organizationId), Number(text)))) {
+              notification.error({
+                message: `没有分配该岗位的权限`,
+              });
+              return Promise.reject(`没有分配该岗位的权限`);
+            }
+            return Promise.resolve('');
+          },
           editComponentProps: {
             options: unref(positionOptions),
             placeholder: '请选择所属岗位',
@@ -81,12 +115,20 @@
         { getDataSource, setTableData, getRawDataSource, getColumns, setProps },
       ] = useTable(tableConfig);
 
-      function handleEdit(record: EditRecordRow) {
+      async function handleEdit(record: EditRecordRow) {
+        if (
+          unref(positionOptions)
+            .map((item) => item.value)
+            .indexOf(record.positionId) < 0
+        ) {
+          record.positionId = null;
+        }
+        await setPositionOptions(record.organizationId);
         record.onEdit?.(true);
       }
 
       async function setOrganizaionTreeList() {
-        organizaionTreeList.value = await getOrganizationTreeList();
+        organizaionTreeList.value = await getOrganizationTreeList(true);
         const tableColumns = getColumns();
         const organizationColumn = tableColumns.find((col) => col.dataIndex === 'organizationId');
         organizationColumn.editComponentProps.treeData = unref(organizaionTreeList);
@@ -95,8 +137,18 @@
         });
       }
 
-      async function setPositionOptions() {
-        positionOptions.value = await getPositionOptions({});
+      async function setPositionOptions(id: Nullable<Number>) {
+        positionOptions.value = await getPositionOptions(id, true);
+        const tableColumns = getColumns();
+        const positionColumn = tableColumns.find((col) => col.dataIndex === 'positionId');
+        positionColumn.editComponentProps.options = unref(positionOptions);
+        setProps({
+          columns: tableColumns,
+        });
+      }
+
+      function clearPositionOptions() {
+        positionOptions.value = [];
         const tableColumns = getColumns();
         const positionColumn = tableColumns.find((col) => col.dataIndex === 'positionId');
         positionColumn.editComponentProps.options = unref(positionOptions);
@@ -106,12 +158,25 @@
       }
 
       function handleCancel(record: EditRecordRow) {
-        record.onEdit?.(false);
         if (record.isNew) {
           const data = getDataSource();
           const index = data.findIndex((item) => item.key === record.key);
           data.splice(index, 1);
+        } else {
+          if (!record.organizationId) {
+            notification.error({
+              message: '请选择用户所属部门',
+            });
+            throw new Error('请选择用户所属部门');
+          }
+          if (!record.positionId) {
+            notification.error({
+              message: '请选择用户所属岗位',
+            });
+            throw new Error('请选择用户所属岗位');
+          }
         }
+        record.onEdit?.(false);
       }
 
       function handleSave(record: EditRecordRow) {
@@ -142,13 +207,17 @@
         return exsitOrganizations.length > 1;
       }
 
-      function handleEditChange(data: Recordable) {
+      async function handleEditChange(data: Recordable) {
         if (data.column.dataIndex == 'positionId') {
           data.record.positionId = data.value;
         }
         if (data.column.dataIndex == 'organizationId') {
           if (hasOrganization(data.value)) {
             throw new Error('用户所属部门不允许重复');
+          }
+          if (data.record.organizationId !== data.value) {
+            data.record.positionId = null;
+            await setPositionOptions(data.value);
           }
           data.record.organizationId = data.value;
         }

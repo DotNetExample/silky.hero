@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Silky.Identity.Application.Contracts.Role.Dtos;
 using Silky.Identity.Application.Contracts.User.Dtos;
 using Silky.Identity.Domain.Shared;
 using Silky.Organization.Domain.Shared;
@@ -26,6 +27,14 @@ public interface IUserAppService
     /// <returns></returns>
     [Authorize(IdentityPermissions.Users.Create)]
     Task CreateAsync(CreateUserInput input);
+    
+    /// <summary>
+    /// 判断是否存在某个账号
+    /// </summary>
+    /// <param name="input"></param>
+    /// <returns></returns>
+    [HttpPost("check")]
+    Task<bool> CheckAsync(CheckAccountInput input);
 
     /// <summary>
     /// 更新用户
@@ -139,6 +148,17 @@ public interface IUserAppService
     Task ChangePasswordAsync(long userId, ChangePasswordInput input);
     
     /// <summary>
+    /// 获取该用户可用于分配的角色列表
+    /// </summary>
+    /// <param name="userId"></param>
+    /// <param name="realName"></param>
+    /// <param name="name"></param>
+    /// <returns></returns>
+    [HttpGet("{userId:long}/role/list")]
+    [Authorize(IdentityPermissions.Users.SetRoles)]
+    Task<ICollection<GetRoleOutput>> GetUserRoleListAsync(long userId, [FromQuery] string realName, [FromQuery] string name);
+    
+    /// <summary>
     /// 获取指定组织机构的用户
     /// </summary>
     /// <param name="organizationId">组织机构id</param>
@@ -183,8 +203,7 @@ public interface IUserAppService
     [ProhibitExtranet]
     [Transaction]
     Task RemoveOrganizationLinkedDataAsync(long[] organizationIds);
-
-
+    
     [ProhibitExtranet]
     [Transaction]
     Task CreateSuperUserAsync(CreateSuperUserInput superUserInput);

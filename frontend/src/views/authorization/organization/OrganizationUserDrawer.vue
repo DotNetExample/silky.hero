@@ -5,7 +5,8 @@
     :title="getTitle"
     @ok="handleSubmit"
     showFooter
-    :width="800"
+    width="50%"
+    destroyOnClose
   >
     <BasicTable @register="registerTable" :searchInfo="searchInfo" ref="tableRef" :maxHeight="650">
       <template #position="{ record }">
@@ -94,7 +95,7 @@
           var organizationUserIds = await getOrganizationUserIds(data.id);
           selectedOrganizationUserIds.value = organizationUserIds;
           setSelectedRowKeys(organizationUserIds);
-          positionOptions.value = await getPositionOptions({});
+          positionOptions.value = await getPositionOptions(data.id, false);
           reload();
         },
       );

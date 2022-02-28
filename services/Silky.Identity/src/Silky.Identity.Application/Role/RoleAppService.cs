@@ -21,6 +21,9 @@ using Silky.Hero.Common.Enums;
 using Silky.Hero.Common.Session;
 using Silky.Identity.Application.Contracts.User.Dtos;
 using Silky.Identity.Domain.Shared;
+using Silky.Organization.Application.Contracts.Organization;
+using Silky.Organization.Application.Contracts.Organization.Dtos;
+using Silky.Rpc.CachingInterceptor;
 using Silky.Transaction.Tcc;
 using IdentityRole = Silky.Identity.Domain.IdentityRole;
 
@@ -32,9 +35,10 @@ public class RoleAppService : IRoleAppService
     private readonly IRepository<IdentityUserRole> _userRoleRepository;
     private readonly ISession _session;
     private readonly IDistributedCache _distributedCache;
-    
+    private readonly IOrganizationAppService _organizationAppService;
+
     public RoleAppService(IdentityRoleManager roleManager,
-        IDistributedCache distributedCache, 
+        IDistributedCache distributedCache,
         IRepository<IdentityUserRole> userRoleRepository)
     {
         _roleManager = roleManager;
@@ -63,7 +67,7 @@ public class RoleAppService : IRoleAppService
     {
         return _roleManager.GetRoleOutputByIdAsync(id);
     }
-    
+
     public async Task<GetRoleOutput> GetAsync(long id)
     {
         return (await _roleManager.GetByIdAsync(id)).Adapt<GetRoleOutput>();
@@ -74,6 +78,24 @@ public class RoleAppService : IRoleAppService
         var role = await _roleManager.GetByIdAsync(id);
         (await _roleManager.DeleteAsync(role)).CheckErrors();
         await RemoveUserRoleCacheAsync(role.Id);
+    }
+
+    public async Task<bool> CheckAsync(CheckRoleInput input)
+    {
+        var exsit = false;
+        switch (input.RoleNameType)
+        {
+            case RoleNameType.Name:
+                exsit = await _roleManager.RoleRepository.AnyAsync(p => p.NormalizedName == input.Name.ToUpper() && p.Id != input.Id,
+                    false);
+                break;
+            case RoleNameType.RealName:
+                exsit = await _roleManager.RoleRepository.AnyAsync(p => p.RealName == input.Name && p.Id != input.Id,
+                    false);
+                break;
+        }
+
+        return exsit;
     }
 
     [UnitOfWork]
@@ -138,6 +160,19 @@ public class RoleAppService : IRoleAppService
         return role.Adapt<GetRoleDataRangeOutput>();
     }
 
+    public async Task<ICollection<GetRoleOutput>> GetListAsync(string realName, string name, Status? status)
+    {
+        return await _roleManager.RoleRepository
+            .AsQueryable(false)
+            .Where(!name.IsNullOrEmpty(), p => p.Name.Contains(name))
+            .Where(!realName.IsNullOrEmpty(), p => p.RealName.Contains(realName))
+            .Where(p => status.HasValue, p => p.Status == status)
+            .OrderByDescending(p => p.Sort)
+            .ThenByDescending(p => p.CreatedTime)
+            .ProjectToType<GetRoleOutput>()
+            .ToListAsync();
+    }
+
     public async Task<PagedList<GetRolePageOutput>> GetPageAsync(GetRolePageInput input)
     {
         var pageRoles = await _roleManager.RoleRepository
@@ -146,8 +181,8 @@ public class RoleAppService : IRoleAppService
                 p => p.Name.Contains(input.Name))
             .Where(!input.RealName.IsNullOrEmpty(),
                 p => p.RealName.Contains(input.RealName))
-            .OrderByDescending(p=> p.Sort)
-            .ThenByDescending(p=> p.CreatedTime)
+            .OrderByDescending(p => p.Sort)
+            .ThenByDescending(p => p.CreatedTime)
             .ProjectToType<GetRolePageOutput>()
             .ToPagedListAsync(input.PageIndex, input.PageSize);
         return pageRoles;
@@ -163,7 +198,7 @@ public class RoleAppService : IRoleAppService
         return _roleManager.CheckHasMenusAsync(menuIds);
     }
 
-    [TccTransaction(ConfirmMethod = "CreateConfirmSuperRoleAsync",CancelMethod = "CreateCancelSuperRoleAsync")]
+    [TccTransaction(ConfirmMethod = "CreateConfirmSuperRoleAsync", CancelMethod = "CreateCancelSuperRoleAsync")]
     public async Task<string> CreateSuperRoleAsync(long tenantId, string superRoleName, string superRealName)
     {
         UpdateCurrentTenantId(tenantId);
@@ -175,29 +210,45 @@ public class RoleAppService : IRoleAppService
         (await _roleManager.CreateAsync(role)).CheckErrors();
         return role.Name;
     }
-    
+
+    public async Task<ICollection<GetRoleOutput>> GetAllocationOrganizationRoleListAsync()
+    {
+        return await _roleManager.RoleRepository
+            .AsQueryable(false)
+            .ProjectToType<GetRoleOutput>().ToListAsync();
+    }
+
+    public async Task<ICollection<GetRoleOutput>> GetPublicRoleListAsync()
+    {
+        return await _roleManager.RoleRepository
+            .AsQueryable(false)
+            .Where(p => p.IsPublic)
+            .ProjectToType<GetRoleOutput>().ToListAsync();
+    }
+
     public async Task<string> CreateConfirmSuperRoleAsync(long tenantId, string superRoleName, string superRealName)
     {
         UpdateCurrentTenantId(tenantId);
-        var role = await _roleManager.RoleRepository.FirstOrDefaultAsync(p=> p.Name == superRoleName);
+        var role = await _roleManager.RoleRepository.FirstOrDefaultAsync(p => p.Name == superRoleName);
         role.Status = Status.Valid;
         (await _roleManager.UpdateAsync(role)).CheckErrors();
         return role.Name;
     }
-    
+
     [UnitOfWork]
     public async Task<string> CreateCancelSuperRoleAsync(long tenantId, string superRoleName, string superRealName)
     {
         UpdateCurrentTenantId(tenantId);
-        var role = await _roleManager.RoleRepository.FirstOrDefaultAsync(p=> p.Name == superRoleName);
+        var role = await _roleManager.RoleRepository.FirstOrDefaultAsync(p => p.Name == superRoleName);
         if (role != null)
         {
             (await _roleManager.DeleteAsync(role)).CheckErrors();
             return role.Name;
         }
+
         return null;
     }
-    
+
     private void UpdateCurrentTenantId(long tenantId)
     {
         var currentTenantId = EngineContext.Current.Resolve<ICurrentTenantId>();
@@ -208,6 +259,7 @@ public class RoleAppService : IRoleAppService
     {
         role.IsDefault = input.IsDefault;
         role.IsPublic = input.IsPublic;
+        role.IsStatic = input.IsStatic;
         role.Sort = input.Sort;
         role.Status = input.Status;
         role.Remark = input.Remark;
@@ -223,21 +275,16 @@ public class RoleAppService : IRoleAppService
             await _distributedCache.RemoveAsync(typeof(GetUserOutput), $"id:{userRole.UserId}");
             await _distributedCache.RemoveAsync(typeof(GetUserRoleOutput), $"roles:userId:{userRole.UserId}");
             await _distributedCache.RemoveAsync(typeof(ICollection<long>), $"roleIds:userId:{userRole.UserId}");
-            await _distributedCache.RemoveAsync(typeof(GetCurrentUserDataRange), $"CurrentUserDataRange:userId:{userRole.UserId}");
-            await _distributedCache.RemoveAsync(typeof(ICollection<GetCurrentUserMenuOutput>), $"CurrentUserMenus:userId:{userRole.UserId}");
-            await _distributedCache.RemoveAsync(typeof(string[]), $"CurrentUserPermissioncodes:userId:{userRole.UserId}");
+            await _distributedCache.RemoveAsync(typeof(GetCurrentUserDataRange),
+                $"CurrentUserDataRange:userId:{userRole.UserId}");
+            await _distributedCache.RemoveAsync(typeof(ICollection<GetCurrentUserMenuOutput>),
+                $"CurrentUserMenus:userId:{userRole.UserId}");
+            await _distributedCache.RemoveAsync(typeof(string[]),
+                $"CurrentUserPermissionCodes:userId:{userRole.UserId}");
+            await _distributedCache.RemoveAsync(typeof(ICollection<GetOrganizationTreeOutput>), $"tree:userId:{userRole.UserId}");
             await _distributedCache.RemoveMatchKeyAsync(typeof(bool), $"permissionName:*:userId:{userRole.UserId}");
             await _distributedCache.RemoveMatchKeyAsync(typeof(bool), $"roleName:*:userId:{userRole.UserId}");
+            await _distributedCache.RemoveMatchKeyAsync(typeof(GetOrganizationOutput), "id:*");
         }
-        
-    }
-
-    public async Task<ICollection<GetRoleOutput>> GetListAsync(string realName,string name)
-    {
-        return await _roleManager.RoleRepository.AsQueryable(false)
-              .Where(!realName.IsNullOrEmpty(), p => p.RealName.Contains(realName))
-              .Where(!name.IsNullOrEmpty(), p => p.Name.Contains(name))
-              .ProjectToType<GetRoleOutput>()
-              .ToListAsync();
     }
 }

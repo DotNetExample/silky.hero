@@ -2,6 +2,7 @@ import { defHttp } from '/@/utils/http/axios';
 import { BasicFetchResult } from '/@/api/model/baseModel';
 
 import { GetPositionModel, GetPositionPageModel } from './model/positionModel';
+import { requestParams } from '../../../mock/_util';
 
 enum Api {
   GetPositionList = '/position/list',
@@ -37,4 +38,21 @@ export const deletePosition = (id: number) => {
 
 export const getPositionById = (id: number) => {
   return defHttp.get({ url: `/position/${id}` });
+};
+
+export const getOrganizationPositionList = (id: number, isAll: boolean) => {
+  return defHttp.get({ url: `/position/${id}/list`, params: { isAll: isAll } });
+};
+
+export const checkPositionDataRange = (organizationId: number, positionId: number) => {
+  return defHttp.post({
+    url: `/position/check/datarange/${organizationId}/${positionId}`,
+  });
+};
+
+export const checkPosition = (requestParams) => {
+  return defHttp.post({
+    url: `/position/check`,
+    params: requestParams,
+  });
 };

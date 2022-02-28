@@ -4,6 +4,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using Mapster;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Distributed;
+using Silky.Account.Application.Contracts.Account.Dtos;
+using Silky.Caching;
 using Silky.Core;
 using Silky.Core.DependencyInjection;
 using Silky.Core.Exceptions;
@@ -21,20 +24,24 @@ public class MenuDomainService : IMenuDomainService, IScopedDependency
 {
     private readonly IRoleAppService _roleAppService;
     private readonly IEditionAppService _editionAppService;
+    private readonly IDistributedCache _distributedCache;
 
     public MenuDomainService(IRepository<Menu> menuRepository,
         IRoleAppService roleAppService,
-        IEditionAppService editionAppService)
+        IEditionAppService editionAppService,
+        IDistributedCache distributedCache)
     {
         MenuRepository = menuRepository;
         _roleAppService = roleAppService;
         _editionAppService = editionAppService;
+        _distributedCache = distributedCache;
     }
 
     public IRepository<Menu> MenuRepository { get; }
 
     public async Task CreateAsync(CreateMenuInput input)
     {
+        await CheckHasMenuPermissionAsync();
         switch (input.Type)
         {
             case MenuType.Catalog:
@@ -61,6 +68,7 @@ public class MenuDomainService : IMenuDomainService, IScopedDependency
             throw new UserFriendlyException($"不存在Id为{input.Id}菜单");
         }
 
+        await CheckHasMenuPermissionAsync();
         switch (input.Type)
         {
             case MenuType.Catalog:
@@ -76,6 +84,8 @@ public class MenuDomainService : IMenuDomainService, IScopedDependency
 
         menu = input.Adapt(menu);
         await MenuRepository.UpdateAsync(menu);
+        var childrenMenus = await GetChildrenMenusAsync(menu.Id);
+        await RemoveMenuCacheAsync(childrenMenus.Select(p=> p.PermissionCode).ToArray());
     }
 
     public async Task<ICollection<Menu>> GetTreeAsync(string name)
@@ -96,6 +106,7 @@ public class MenuDomainService : IMenuDomainService, IScopedDependency
             throw new UserFriendlyException($"不存在Id为{id}的菜单信息");
         }
 
+        await CheckHasMenuPermissionAsync();
         var childrenMenus = await GetChildrenMenusAsync(id);
         if (await _roleAppService.CheckHasMenusAsync(childrenMenus.Select(p => p.Id).ToArray()))
         {
@@ -103,6 +114,7 @@ public class MenuDomainService : IMenuDomainService, IScopedDependency
         }
 
         await MenuRepository.DeleteAsync(childrenMenus);
+        await RemoveMenuCacheAsync(childrenMenus.Select(p => p.PermissionCode).ToArray());
     }
 
     public async Task<IEnumerable<Menu>> GetChildrenMenusAsync(long menuId,
@@ -232,5 +244,33 @@ public class MenuDomainService : IMenuDomainService, IScopedDependency
         }
 
         return includeParentMenus;
+    }
+
+    private async Task CheckHasMenuPermissionAsync()
+    {
+        var editionFeature = await _editionAppService.GetEditionFeatureAsync(FeatureCode.EnabledMenuManage);
+        if (editionFeature?.FeatureValue.To<bool>() == false)
+        {
+            throw new BusinessException("您没有管理菜单的权限");
+        }
+    }
+
+    /// <summary>
+    /// 移除当前登录用户的缓存
+    /// </summary>
+    /// <remarks>更新和删除菜单时,应当更新和删除当前登录用户的数据权限</remarks>
+    /// <param name="permissionCodes"></param>
+    private async Task RemoveMenuCacheAsync(params string[] permissionCodes)
+    {
+        await _distributedCache.RemoveMatchKeyAsync("*CurrentUserMenus:*");
+        await _distributedCache.RemoveMatchKeyAsync("*CurrentUserPermissionCodes:*");
+
+        foreach (var permissionCode in permissionCodes)
+        {
+            if (!permissionCode.IsNullOrEmpty())
+            {
+                await _distributedCache.RemoveMatchKeyAsync(typeof(bool), $"permissionName:{permissionCode}");
+            }
+        }
     }
 }

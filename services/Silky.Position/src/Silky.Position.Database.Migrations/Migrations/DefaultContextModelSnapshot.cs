@@ -51,6 +51,18 @@ namespace Silky.Position.Database.Migrations.Migrations
                         .HasColumnType("tinyint(1)")
                         .HasColumnName("IsDeleted");
 
+                    b.Property<bool>("IsPublic")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint(1)")
+                        .HasDefaultValue(false)
+                        .HasColumnName("IsPublic");
+
+                    b.Property<bool>("IsStatic")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint(1)")
+                        .HasDefaultValue(false)
+                        .HasColumnName("IsStatic");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(256)
@@ -94,9 +106,11 @@ namespace Silky.Position.Database.Migrations.Migrations
                         new
                         {
                             Id = 1L,
-                            ConcurrencyStamp = "736ee5e8-18af-4e01-861e-4adadae13525",
+                            ConcurrencyStamp = "09685c2c-c8c7-47e7-96cb-56e8e26d4f2f",
                             CreatedTime = new DateTimeOffset(new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             IsDeleted = false,
+                            IsPublic = false,
+                            IsStatic = false,
                             Name = "总经理",
                             Sort = 99,
                             Status = 0,
@@ -105,9 +119,11 @@ namespace Silky.Position.Database.Migrations.Migrations
                         new
                         {
                             Id = 2L,
-                            ConcurrencyStamp = "1b24a1a4-b091-4f66-8e15-af74dfecd4d5",
+                            ConcurrencyStamp = "dda7ead7-2522-45d2-b4e2-8492e2a4cc4f",
                             CreatedTime = new DateTimeOffset(new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             IsDeleted = false,
+                            IsPublic = false,
+                            IsStatic = false,
                             Name = "技术总监",
                             Sort = 98,
                             Status = 0,
@@ -116,9 +132,11 @@ namespace Silky.Position.Database.Migrations.Migrations
                         new
                         {
                             Id = 3L,
-                            ConcurrencyStamp = "d5d75344-4e00-4329-a580-14bee0c90b75",
+                            ConcurrencyStamp = "ff5ace43-8718-42f1-a4a4-dcf4522bbe97",
                             CreatedTime = new DateTimeOffset(new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             IsDeleted = false,
+                            IsPublic = false,
+                            IsStatic = false,
                             Name = "后台组长",
                             Sort = 97,
                             Status = 0,
@@ -127,9 +145,11 @@ namespace Silky.Position.Database.Migrations.Migrations
                         new
                         {
                             Id = 4L,
-                            ConcurrencyStamp = "3919966e-faff-46a6-864b-9358c0288e7d",
+                            ConcurrencyStamp = "5303df3c-5eba-4ae9-9234-1e7c5675c0d0",
                             CreatedTime = new DateTimeOffset(new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             IsDeleted = false,
+                            IsPublic = false,
+                            IsStatic = false,
                             Name = "前台组长",
                             Sort = 96,
                             Status = 0,

@@ -5,139 +5,45 @@
     showFooter
     :title="getTitle"
     width="40%"
+    destroyOnClose
     @ok="handleSubmit"
   >
-    <!-- <BasicTree
-      :tree-data="menusTreeData"
-      defaultExpandAll
-      checkable
-      multiple
-      ref="treeRef"
-      @change="handleCheckedMenus"
-    /> -->
-    <Checkbox
-      v-model:checked="checkAll"
-      @change="checkeAllMenus"
-      style="margin-left: 30px; margin-bottom: 20px"
-      >全选</Checkbox
-    >
-    <Tabs tab-position="left">
-      <TabPane
-        v-for="(menusTree, index) in menusTreeData"
-        :key="`${index}`"
-        :tab="`${menusTree.title}`"
-      >
-        <!-- <PageWrapper>
-          <Row :gutter="[16, 16]">
-            <Col :span="16">
-              
-            </Col>
-          </Row>
-        </PageWrapper> -->
-        <Checkbox
-          v-model:checked="checkAll"
-          @change="checkeAllMenus"
-          style="margin-left: 20px; margin-bottom: 10px"
-          >全选</Checkbox
-        >
-        <BasicTree
-          :tree-data="menusTree.children"
-          defaultExpandAll
-          checkable
-          multiple
-          style="height: 100%"
-        />
-      </TabPane>
-    </Tabs>
+    <AuthorizationMenu :checkable="true" ref="menuRef" />
   </BasicDrawer>
 </template>
 
 <script lang="ts">
-  import { defineComponent, ref, computed, unref, reactive, toRefs } from 'vue';
+  import { defineComponent, ref, computed, unref } from 'vue';
   import { BasicDrawer, useDrawerInner } from '/@/components/Drawer';
-  import { PageWrapper } from '/@/components/Page';
-  import { BasicTree, TreeActionType } from '/@/components/Tree/index';
-  import { TreeItem } from '/@/components/Tree';
-  import { Checkbox, Tabs, TabPane, Row, Col } from 'ant-design-vue';
-  import { treeToList } from '/@/utils/helper/treeHelper';
-  import { arrayEquals } from '/@/utils';
   import { getMenuTreeList2 } from '/@/views/authorization/menu/menu.data';
   import { getRoleMenuIds } from '/@/api/role';
+  import { AuthorizationMenu } from '../components/AuthorizationMenu/index';
+  import { TreeItem } from '/@/components/Tree';
+
   export default defineComponent({
     name: 'RoleMenuDrawer',
-    components: { BasicDrawer, BasicTree, Checkbox, Tabs, TabPane, Row, Col, PageWrapper },
+    components: { BasicDrawer, AuthorizationMenu },
     setup(_, { emit }) {
       const getTitle = computed(() => '授权角色菜单');
-      const menusTreeData = ref<TreeItem[]>([]);
-      const treeRef = ref<Nullable<TreeActionType>>(null);
       const roleId = ref<Nullable<number>>();
-
-      const checkAllState = reactive({
-        indeterminate: false,
-        checkAll: false,
-      });
-
-      function getTree() {
-        const tree = unref(treeRef);
-        if (!tree) {
-          throw new Error('tree is null!');
-        }
-        return tree;
-      }
-
-      function setCheckAllStateStatus(indeterminate: boolean, checkAll: boolean) {
-        checkAllState.indeterminate = indeterminate;
-        checkAllState.checkAll = checkAll;
-      }
-
-      function checkeAllMenus(e: any) {
-        checkAllState.indeterminate = false;
-        getTree().checkAll(e.target.checked);
-      }
-      function isCheckedAll(menuTree: TreeItem[], checkedMenuIds: number[]) {
-        const allMenuIds = treeToList(menuTree)
-          .map((item) => item.key)
-          .sort((item1, item2) => {
-            return item1 - item2;
-          });
-
-        return arrayEquals(
-          allMenuIds,
-          checkedMenuIds.sort((item1, item2) => {
-            return item1 - item2;
-          }),
-        );
-      }
+      const menuRef = ref<{
+        setMenuItems: (data: TreeItem[], menuIds: Nullable<number[]>) => void;
+        getCheckedAllMenuIds: () => Number[];
+      }>('menuRef');
 
       const [registerDrawer, { setDrawerProps, closeDrawer }] = useDrawerInner(async (data) => {
         roleId.value = data.record.id;
-        const menuTree = await getMenuTreeList2({});
-        menusTreeData.value = menuTree;
-        // const roleMenu = await getRoleMenuIds(data.record.id);
-        // getTree().setCheckedKeys(roleMenu.menuIds);
-        // const checkedAll = isCheckedAll(menuTree, roleMenu.menuIds);
-        // const indeterminate = !checkedAll && roleMenu.menuIds.length > 0;
-        // setCheckAllStateStatus(indeterminate, checkedAll);
+        const menuTrees = await getMenuTreeList2({});
+        const roleMenu = await getRoleMenuIds(data.record.id);
+        menuRef.value.setMenuItems(menuTrees, roleMenu.menuIds);
         setDrawerProps({ confirmLoading: false });
       });
-
-      function handleCheckedMenus(keys: number[]) {
-        const allMenuIds = treeToList(unref(menusTreeData))
-          .map((item) => item.key)
-          .sort((item1, item2) => item1 - item2);
-        const isCheckedAll = arrayEquals(
-          allMenuIds,
-          keys.sort((item1, item2) => item1 - item2),
-        );
-        checkAllState.checkAll = isCheckedAll;
-        checkAllState.indeterminate = !isCheckedAll && keys.length > 0;
-      }
 
       async function handleSubmit() {
         try {
           setDrawerProps({ confirmLoading: true });
-          const checkedMenuIds = getTree().getCheckedKeys();
-          emit('success', { id: unref(roleId), menuIds: checkedMenuIds });
+          const menuIds = menuRef.value.getCheckedAllMenuIds();
+          emit('success', { id: unref(roleId), menuIds: menuIds });
           closeDrawer();
         } finally {
           setDrawerProps({ confirmLoading: false });
@@ -145,15 +51,9 @@
       }
       return {
         getTitle,
-        menusTreeData,
-        treeRef,
-        setCheckAllStateStatus,
-        ...toRefs(checkAllState),
         handleSubmit,
         registerDrawer,
-        getTree,
-        checkeAllMenus,
-        handleCheckedMenus,
+        menuRef,
       };
     },
   });

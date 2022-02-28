@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Silky.Hero.Common.Enums;
 using Silky.Identity.Application.Contracts.Role.Dtos;
 using Silky.Identity.Domain.Shared;
 using Silky.Rpc.CachingInterceptor;
@@ -24,6 +25,8 @@ public interface IRoleAppService
     /// <param name="input"></param>
     /// <returns></returns>
     [Authorize(IdentityPermissions.Roles.Create)]
+    [RemoveCachingIntercept(typeof(ICollection<GetRoleOutput>),"allocationOrganizationRoleList")]
+    [RemoveCachingIntercept(typeof(ICollection<GetRoleOutput>),"getPublicRoleList")]
     Task CreateAsync(CreateRoleInput input);
     
     /// <summary>
@@ -34,6 +37,8 @@ public interface IRoleAppService
     [RemoveCachingIntercept(typeof(GetRoleOutput), "id:{0}")]
     [RemoveCachingIntercept(typeof(GetRoleDetailOutput), "id:detail:{0}")]
     [RemoveCachingIntercept(typeof(ICollection<string>),"permissions:roleId:{0}")]
+    [RemoveCachingIntercept(typeof(ICollection<GetRoleOutput>),"allocationOrganizationRoleList")]
+    [RemoveCachingIntercept(typeof(ICollection<GetRoleOutput>),"getPublicRoleList")]
     [Authorize(IdentityPermissions.Roles.Update)]
     Task UpdateAsync(UpdateRoleInput input);
 
@@ -59,8 +64,18 @@ public interface IRoleAppService
     [RemoveCachingIntercept(typeof(GetRoleOutput), "id:{0}")]
     [RemoveCachingIntercept(typeof(GetRoleDetailOutput), "id:detail:{0}")]
     [RemoveCachingIntercept(typeof(ICollection<string>),"permissions:roleId:{0}")]
+    [RemoveCachingIntercept(typeof(ICollection<GetRoleOutput>),"allocationOrganizationRoleList")]
+    [RemoveCachingIntercept(typeof(ICollection<GetRoleOutput>),"getPublicRoleList")]
     [Authorize(IdentityPermissions.Roles.Delete)]
     Task DeleteAsync([CacheKey(0)] long id);
+
+    /// <summary>
+    /// 检查角色是否存在
+    /// </summary>
+    /// <param name="input"></param>
+    /// <returns></returns>
+    [HttpPost("check")]
+    Task<bool> CheckAsync(CheckRoleInput input);
 
     /// <summary>
     /// 授权角色菜单
@@ -105,7 +120,7 @@ public interface IRoleAppService
     [HttpGet("datarange/{id:long}")]
     Task<GetRoleDataRangeOutput> GetDataRangeAsync(long id);
 
-    Task<ICollection<GetRoleOutput>> GetListAsync([FromQuery]string realName, [FromQuery] string name);
+    Task<ICollection<GetRoleOutput>> GetListAsync([FromQuery]string realName, [FromQuery] string name,[FromQuery] Status? status);
 
     /// <summary>
     /// 分页查询角色信息
@@ -124,4 +139,13 @@ public interface IRoleAppService
     [ProhibitExtranet]
     [Transaction]
     Task<string> CreateSuperRoleAsync(long tenantId, string superRoleName, string superRealName);
+
+    [GetCachingIntercept("allocationOrganizationRoleList")]
+    [ProhibitExtranet]
+    Task<ICollection<GetRoleOutput>> GetAllocationOrganizationRoleListAsync();
+
+    [GetCachingIntercept("getPublicRoleList")] 
+    [ProhibitExtranet]
+    Task<ICollection<GetRoleOutput>> GetPublicRoleListAsync();
+    
 }

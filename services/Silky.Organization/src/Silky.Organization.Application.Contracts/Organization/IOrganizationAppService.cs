@@ -1,9 +1,11 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Silky.Identity.Application.Contracts.Role.Dtos;
 using Silky.Identity.Application.Contracts.User.Dtos;
 using Silky.Organization.Application.Contracts.Organization.Dtos;
 using Silky.Organization.Domain.Shared;
+using Silky.Position.Application.Contracts.Position.Dtos;
 using Silky.Rpc.CachingInterceptor;
 using Silky.Rpc.Routing;
 using Silky.Rpc.Runtime.Server;
@@ -25,19 +27,35 @@ public interface IOrganizationAppService
     /// <remarks>如果Id为null，则表示新增</remarks>
     /// <param name="input"></param>
     /// <returns></returns>
-    [RemoveCachingIntercept(typeof(ICollection<GetOrganizationTreeOutput>), "tree")]
+    [RemoveCachingIntercept(typeof(ICollection<GetOrganizationTreeOutput>), "tree", OnlyCurrentUserData = true)]
     [Authorize(OrganizationPermissions.Organizations.Create)]
     Task CreateAsync(CreateOrganizationInput input);
+
+    /// <summary>
+    /// 检查是否存在某个组织机构
+    /// </summary>
+    /// <param name="input"></param>
+    /// <returns></returns>
+    [HttpPost("check")]
+    Task<bool> CheckAsync(CheckOrganizationInput input);
+
+    /// <summary>
+    /// 检查是否数据权限
+    /// </summary>
+    /// <param name="organizationId"></param>
+    /// <returns></returns>
+    [HttpPost("check/datarange/{organizationId:long}")]
+    Task<bool> CheckHasDataRangeAsync(long organizationId);
 
     /// <summary>
     /// 更新组织机构
     /// </summary>
     /// <param name="input"></param>
     /// <returns></returns>
-    [RemoveCachingIntercept(typeof(GetOrganizationOutput), "id:{0}")]
-    [RemoveCachingIntercept(typeof(ICollection<GetOrganizationTreeOutput>), "tree")]
+    [RemoveCachingIntercept(typeof(GetOrganizationOutput), "id:{0}", OnlyCurrentUserData = true)]
+    [RemoveCachingIntercept(typeof(ICollection<GetOrganizationTreeOutput>), "tree", OnlyCurrentUserData = true)]
     [RemoveCachingIntercept(typeof(bool), "HasOrganization:{0}")]
-    [RemoveCachingIntercept(typeof(IEnumerable<long>),"GetSelfAndChildrenOrganizationIds:{0}")]
+    [RemoveCachingIntercept(typeof(ICollection<long>), "GetSelfAndChildrenOrganizationIds:{0}")]
     [Authorize(OrganizationPermissions.Organizations.Update)]
     Task UpdateAsync(UpdateOrganizationInput input);
 
@@ -47,10 +65,10 @@ public interface IOrganizationAppService
     /// <param name="id">主键Id</param>
     /// <returns></returns>
     [HttpDelete("{id:long}")]
-    [RemoveCachingIntercept(typeof(GetOrganizationOutput), "id:{0}")]
-    [RemoveCachingIntercept(typeof(ICollection<GetOrganizationTreeOutput>), "tree")]
+    [RemoveCachingIntercept(typeof(GetOrganizationOutput), "id:{0}", OnlyCurrentUserData = true)]
+    [RemoveCachingIntercept(typeof(ICollection<GetOrganizationTreeOutput>), "tree", OnlyCurrentUserData = true)]
     [RemoveCachingIntercept(typeof(bool), "HasOrganization:{0}")]
-    [RemoveCachingIntercept(typeof(IEnumerable<long>),"GetSelfAndChildrenOrganizationIds:{0}")]
+    [RemoveCachingIntercept(typeof(ICollection<long>), "GetSelfAndChildrenOrganizationIds:{0}")]
     [Authorize(OrganizationPermissions.Organizations.Delete)]
     [Transaction]
     Task DeleteAsync([CacheKey(0)] long id);
@@ -61,8 +79,8 @@ public interface IOrganizationAppService
     /// <param name="id">主键Id</param>
     /// <returns></returns>
     [HttpGet("{id:long}")]
-    [GetCachingIntercept("id:{0}")]
-   // [Authorize(OrganizationPermissions.Organizations.LookDetail)]
+    [GetCachingIntercept("id:{0}", OnlyCurrentUserData = true)]
+    // [Authorize(OrganizationPermissions.Organizations.LookDetail)]
     Task<GetOrganizationOutput> GetAsync([CacheKey(0)] long id);
 
     /// <summary>
@@ -70,7 +88,7 @@ public interface IOrganizationAppService
     /// </summary>
     /// <param name="input"></param>
     /// <returns></returns>
-    Task<PagedList<GetOrganizationPageOutput>> GetPageAsync(GetOrganizationPageInput input);
+    // Task<PagedList<GetOrganizationPageOutput>> GetPageAsync(GetOrganizationPageInput input);
 
     /// <summary>
     /// 获取某个组织机构的用户列表
@@ -98,7 +116,7 @@ public interface IOrganizationAppService
     /// <returns></returns>
     [HttpPut("{id:long}/users")]
     [Authorize(OrganizationPermissions.Organizations.AddUsers)]
-    Task AddUsers(long id,ICollection<AddOrganizationUserInput> inputs);
+    Task AddUsers(long id, ICollection<AddOrganizationUserInput> inputs);
 
     /// <summary>
     /// 移除指定组织机构用户
@@ -115,8 +133,39 @@ public interface IOrganizationAppService
     /// </summary>
     /// <returns></returns>
     [HttpGet]
-    [GetCachingIntercept("tree")]
+    [GetCachingIntercept("tree", OnlyCurrentUserData = true)]
     Task<ICollection<GetOrganizationTreeOutput>> GetTreeAsync();
+
+    /// <summary>
+    /// 设置某个组织机构可分配的角色权限
+    /// </summary>
+    /// <param name="id"></param>
+    /// <param name="roleIds"></param>
+    /// <returns></returns>
+    [HttpPut("{id:long}/role")]
+    [Authorize(OrganizationPermissions.Organizations.AllocationRole)]
+    Task SetAllocationRoleListAsync(long id, long[] roleIds);
+
+
+    /// <summary>
+    /// 设置某个组织机构可分配的职位
+    /// </summary>
+    /// <param name="id"></param>
+    /// <param name="positionIds"></param>
+    /// <returns></returns>
+    [HttpPut("{id:long}/position")]
+    [Authorize(OrganizationPermissions.Organizations.AllocationPosition)]
+    [RemoveCachingIntercept(typeof(ICollection<GetPositionOutput>), "getOrganizationPositionList:{0}")]
+    [RemoveCachingIntercept(typeof(long[]), "getOrganizationPositionIds:{0}")]
+    [RemoveCachingIntercept(typeof(GetOrganizationOutput), "id:{0}", OnlyCurrentUserData = true)]
+    Task SetAllocationPositionListAsync([CacheKey(0)] long id, long[] positionIds);
+
+    /// <summary>
+    /// 获取当前登陆用户所拥有的组织机构
+    /// </summary>
+    /// <returns></returns>
+    [HttpGet("currentuser/list")]
+    Task<ICollection<GetOrganizationOutput>> GetCurrentOrganizationListAsync();
 
     /// <summary>
     /// 判断是否存在组织机构
@@ -134,5 +183,30 @@ public interface IOrganizationAppService
     /// <returns></returns>
     [ProhibitExtranet]
     [GetCachingIntercept("GetSelfAndChildrenOrganizationIds:{0}")]
-    Task<IEnumerable<long>> GetSelfAndChildrenOrganizationIdsAsync([CacheKey(0)]long organizationId);
+    Task<ICollection<long>> GetSelfAndChildrenOrganizationIdsAsync([CacheKey(0)] long organizationId);
+
+    /// <summary>
+    /// 获取用于分配组织机构的角色列表
+    /// </summary>
+    /// <returns></returns>
+    [HttpGet("role/allocation/list")]
+    [Authorize(OrganizationPermissions.Organizations.AllocationRole)]
+    [GetCachingIntercept("allocationOrganizationRoleList")]
+    Task<ICollection<GetRoleOutput>> GetAllocationRoleListAsync();
+
+    /// <summary>
+    /// 获取用于分配组织机构职位列表
+    /// </summary>
+    /// <returns></returns>
+    [HttpGet("position/allocation/list")]
+    [Authorize(OrganizationPermissions.Organizations.AllocationPosition)]
+    [GetCachingIntercept("allocationOrganizationPositionList")]
+    Task<ICollection<GetPositionOutput>> GetAllocationPositionListAsync();
+
+    [ProhibitExtranet]
+    Task<long[]> GetOrganizationRoleIdsAsync(long[] organizationIds);
+
+    [ProhibitExtranet]
+    [GetCachingIntercept("getOrganizationPositionIds:{0}")]
+    Task<long[]> GetOrganizationPositionIdsAsync([CacheKey(0)] long organizationId);
 }

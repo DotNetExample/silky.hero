@@ -3,8 +3,9 @@
     <BasicTable @register="registerTable" :searchInfo="searchInfo">
       <template #realName="{ text, record }">
         {{ text }}
-        <Tag color="green" v-if="record.isDefault">默认</Tag>
-        <Tag color="blue" v-if="record.isPublic">公开</Tag>
+        <Tag color="green" v-if="record.isDefault" style="margin-left: 3px">默认</Tag>
+        <Tag color="blue" v-if="record.isPublic" style="margin-left: 3px">公共</Tag>
+        <Tag color="cyan" v-if="record.isStatic" style="margin-left: 3px">静态</Tag>
       </template>
       <template #toolbar>
         <a-button type="primary" v-auth="'Identity.Role.Create'" @click="handleCreate"
@@ -63,7 +64,7 @@
       @success="handleSuccessAuthorizeRoleData"
       ref="roleDataDrawerRef"
     />
-    <RoleDetailDrawer @register="registerRoleDetailDrawer" ref="roleDetailDrawerRef" />
+    <RoleDetailDrawer @register="registerRoleDetailDrawer" />
   </PageWrapper>
 </template>
 
@@ -143,12 +144,6 @@
         setMenusTreeData: (treeData: TreeItem[]) => void;
         setCheckAllStateStatus: (indeterminate: boolean, checkAll: boolean) => void;
       }>('roleMenuDrawerRef');
-
-      const roleDetailDrawerRef = ref<{
-        getMenuTree: () => any;
-        setMenusTreeData: (treeData: TreeItem[]) => void;
-        setDataRange: (dataRange) => void;
-      }>('roleDetailDrawerRef');
 
       const [registerDrawer, { openDrawer }] = useDrawer();
       const [registerRoleMenuDrawer, { openDrawer: openRoleMenuDrawer }] = useDrawer();
@@ -273,7 +268,6 @@
         handleSuccessAuthorizeRoleData,
         searchInfo,
         roleMenuDrawerRef,
-        roleDetailDrawerRef,
         loadingRef,
       };
     },

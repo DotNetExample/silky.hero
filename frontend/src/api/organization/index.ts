@@ -7,10 +7,12 @@ import {
   CreateOrgizationModel,
 } from './model/organizationModel';
 import { BasicFetchResult } from '/@/api/model/baseModel';
-
+import { requestParams } from '../../../mock/_util';
 enum Api {
   GetOrganizationTree = '/organization/tree',
   Organization = '/organization',
+  GetAllocationOrganizationRoles = 'organization/role/allocation/list',
+  GetAllocationOrganizationPositions = 'organization/position/allocation/list',
 }
 
 export const getOrganizationTree = () => {
@@ -70,5 +72,47 @@ export const removeOrganizationUsers = (organizationUserId: number, userIds: num
   return defHttp.delete({
     url: `/organization/${organizationUserId}/users`,
     params: userIds,
+  });
+};
+
+export const getAllocationOrganizationRoles = () => {
+  return defHttp.get({
+    url: Api.GetAllocationOrganizationRoles,
+  });
+};
+
+export const setAllocationOrganizationRoles = (organizationId: number, roleIds: number[]) => {
+  return defHttp.put({
+    url: `/organization/${organizationId}/role`,
+    params: roleIds,
+  });
+};
+
+export const getOrganizationPositions = () => {
+  return defHttp.get({
+    url: Api.GetAllocationOrganizationPositions,
+  });
+};
+
+export const setAllocationOrganizationPositions = (
+  organizationId: number,
+  positionIds: number[],
+) => {
+  return defHttp.put({
+    url: `/organization/${organizationId}/position`,
+    params: positionIds,
+  });
+};
+
+export const checkOrganizationDataRange = (organizationId: number) => {
+  return defHttp.post({
+    url: `/organization/check/datarange/${organizationId}`,
+  });
+};
+
+export const checkOrganization = (requestParams) => {
+  return defHttp.post({
+    url: `/organization/check`,
+    params: requestParams,
   });
 };

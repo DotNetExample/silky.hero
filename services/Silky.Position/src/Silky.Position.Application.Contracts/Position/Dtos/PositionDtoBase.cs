@@ -1,6 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using Silky.Hero.Common.Enums;
-using Silky.Rpc.CachingInterceptor;
 
 namespace Silky.Position.Application.Contracts.Position.Dtos;
 
@@ -22,7 +21,17 @@ public abstract class PositionDtoBase
     /// 备注
     /// </summary>
     public string Remark { get; set; }
-
+    
+    /// <summary>
+    /// 是否静态职位
+    /// </summary>
+    public bool IsStatic { get; set; }
+    
+    /// <summary>
+    /// 是否公共职位
+    /// </summary>
+    public bool IsPublic { get; set; }
+    
     /// <summary>
     /// 状态
     /// </summary>

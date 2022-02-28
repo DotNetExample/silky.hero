@@ -1,5 +1,11 @@
 <template>
-  <BasicDrawer v-bind="$attrs" @register="registerDrawer" :title="getTitle" width="50%">
+  <BasicDrawer
+    v-bind="$attrs"
+    @register="registerDrawer"
+    :title="getTitle"
+    width="50%"
+    destroyOnClose
+  >
     <Tabs>
       <TabPane key="1" tab="详情">
         <Card title="基础信息" :bordered="false">
@@ -37,7 +43,7 @@
         getDataSource: () => any;
         setTableData: (data: any[]) => void;
         setOrganizaionTreeList: () => void;
-        setPositionOptions: () => void;
+        setPositionOptions: (id: Nullable<number>) => void;
       } | null>(null);
       const getTitle = ref('用户');
       const userDetail = ref();
@@ -46,7 +52,7 @@
         getTitle.value = data.realName;
         userDetail.value = data;
         await userSubsidiaryTableRef.value?.setOrganizaionTreeList();
-        await userSubsidiaryTableRef.value?.setPositionOptions();
+        await userSubsidiaryTableRef.value?.setPositionOptions(null);
         userSubsidiaryTableRef.value?.setTableData(data.userSubsidiaries);
       });
       return {

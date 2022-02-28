@@ -38,6 +38,14 @@ public interface ITenantAppService
     Task UpdateAsync(UpdateTenantInput input);
 
     /// <summary>
+    /// 检查租户是否存在
+    /// </summary>
+    /// <param name="input"></param>
+    /// <returns></returns>
+    [HttpPost("check")]
+    Task<bool> CheckAsync(CheckTenantInput input);
+
+    /// <summary>
     /// 通过Id获取租户信息
     /// </summary>
     /// <param name="id"></param>

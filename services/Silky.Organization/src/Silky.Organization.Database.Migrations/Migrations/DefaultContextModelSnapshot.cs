@@ -100,7 +100,7 @@ namespace Silky.Organization.Database.Migrations.Migrations
                         new
                         {
                             Id = 1L,
-                            ConcurrencyStamp = "2a778c61-538b-40da-8c4f-228fa5533ff1",
+                            ConcurrencyStamp = "ef1d0ae8-1f02-4adf-bbd7-f6f6e6381435",
                             CreatedTime = new DateTimeOffset(new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             IsDeleted = false,
                             Name = "Silky.Hero社区",
@@ -111,7 +111,7 @@ namespace Silky.Organization.Database.Migrations.Migrations
                         new
                         {
                             Id = 2L,
-                            ConcurrencyStamp = "16a16784-b089-41f0-8c7c-71be6f77aa22",
+                            ConcurrencyStamp = "18b71c25-21ad-45ae-a4f9-3c4904a36518",
                             CreatedTime = new DateTimeOffset(new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             IsDeleted = false,
                             Name = "Silky.Hero开发部",
@@ -124,7 +124,7 @@ namespace Silky.Organization.Database.Migrations.Migrations
                         new
                         {
                             Id = 3L,
-                            ConcurrencyStamp = "6cfd35cc-ad85-4375-8466-1c23c55c7b46",
+                            ConcurrencyStamp = "d105c731-0413-4966-9602-869839df6d3c",
                             CreatedTime = new DateTimeOffset(new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             IsDeleted = false,
                             Name = "Silky.Hero后端开发部",
@@ -137,7 +137,7 @@ namespace Silky.Organization.Database.Migrations.Migrations
                         new
                         {
                             Id = 4L,
-                            ConcurrencyStamp = "a78b0787-c847-4e18-b595-cbd337b40347",
+                            ConcurrencyStamp = "1a4ec986-f626-46cc-b3e4-5da2f05e3d99",
                             CreatedTime = new DateTimeOffset(new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             IsDeleted = false,
                             Name = "Silky.Hero前端开发部",
@@ -150,7 +150,7 @@ namespace Silky.Organization.Database.Migrations.Migrations
                         new
                         {
                             Id = 5L,
-                            ConcurrencyStamp = "2c40a87a-3235-4ed4-b554-98c5819bd785",
+                            ConcurrencyStamp = "92d1e834-a101-4d1f-92b0-7673f69e4eb8",
                             CreatedTime = new DateTimeOffset(new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             IsDeleted = false,
                             Name = "Silky.Hero测试部",
@@ -163,7 +163,7 @@ namespace Silky.Organization.Database.Migrations.Migrations
                         new
                         {
                             Id = 6L,
-                            ConcurrencyStamp = "a468f943-78bc-418e-becc-685ec94e06d7",
+                            ConcurrencyStamp = "6023d014-56b1-4899-a4cf-a46de9201a67",
                             CreatedTime = new DateTimeOffset(new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             IsDeleted = false,
                             Name = "Silky.Hero产品部",
@@ -175,6 +175,84 @@ namespace Silky.Organization.Database.Migrations.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Silky.Organization.Domain.OrganizationPosition", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    b.Property<long?>("CreatedBy")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTimeOffset>("CreatedTime")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("CreatedTime");
+
+                    b.Property<long>("OrganizationId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("OrganizationId");
+
+                    b.Property<long>("PositionId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("PositionId");
+
+                    b.Property<long?>("TenantId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("TenantId");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTimeOffset?>("UpdatedTime")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("UpdatedTime");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrganizationId");
+
+                    b.ToTable("OrganizationPositions", (string)null);
+                });
+
+            modelBuilder.Entity("Silky.Organization.Domain.OrganizationRole", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    b.Property<long?>("CreatedBy")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTimeOffset>("CreatedTime")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("CreatedTime");
+
+                    b.Property<long>("OrganizationId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("OrganizationId");
+
+                    b.Property<long>("RoleId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("RoleId");
+
+                    b.Property<long?>("TenantId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("TenantId");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTimeOffset?>("UpdatedTime")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("UpdatedTime");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrganizationId");
+
+                    b.ToTable("OrganizationRoles", (string)null);
+                });
+
             modelBuilder.Entity("Silky.Organization.Domain.Organization", b =>
                 {
                     b.HasOne("Silky.Organization.Domain.Organization", "Parent")
@@ -184,9 +262,35 @@ namespace Silky.Organization.Database.Migrations.Migrations
                     b.Navigation("Parent");
                 });
 
+            modelBuilder.Entity("Silky.Organization.Domain.OrganizationPosition", b =>
+                {
+                    b.HasOne("Silky.Organization.Domain.Organization", "Organization")
+                        .WithMany("OrganizationPositions")
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Organization");
+                });
+
+            modelBuilder.Entity("Silky.Organization.Domain.OrganizationRole", b =>
+                {
+                    b.HasOne("Silky.Organization.Domain.Organization", "Organization")
+                        .WithMany("OrganizationRoles")
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Organization");
+                });
+
             modelBuilder.Entity("Silky.Organization.Domain.Organization", b =>
                 {
                     b.Navigation("Children");
+
+                    b.Navigation("OrganizationPositions");
+
+                    b.Navigation("OrganizationRoles");
                 });
 #pragma warning restore 612, 618
         }

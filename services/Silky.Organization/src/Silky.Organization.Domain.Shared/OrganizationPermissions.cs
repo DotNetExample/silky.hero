@@ -13,5 +13,7 @@ public class OrganizationPermissions
         public const string AddUsers = GroupName + ".AddUsers";
         public const string RemoveUser = GroupName + ".RemoveUser";
         public const string LookDetail = GroupName + ".LookDetail";
+        public const string AllocationRole = GroupName + ".AllocationRole";
+        public const string AllocationPosition = GroupName + ".AllocationPosition";
     }
 }

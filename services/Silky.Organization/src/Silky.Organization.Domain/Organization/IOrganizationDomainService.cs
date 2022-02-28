@@ -15,5 +15,8 @@ public interface IOrganizationDomainService : IScopedDependency
     Task DeleteConfirmAsync(long id);
     Task<ICollection<GetOrganizationTreeOutput>> GetTreeAsync();
     Task<IEnumerable<Organization>> GetChildrenOrganizationsAsync(long organizationId, bool includeSelf = true);
-   
+
+    Task SetAllocationRoleListAsync(long id, long[] roleIds);
+
+    Task SetAllocationPositionListAsync(long id, long[] positionIds);
 }

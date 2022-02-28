@@ -6,6 +6,7 @@
     :title="getTitle"
     width="30%"
     @ok="handleSubmit"
+    destroyOnClose
   >
     <BasicForm @register="registerForm">
       <template #dataRangeSlot="{ model, field }">
@@ -40,12 +41,12 @@
         resetFields();
         clearValidate();
         const roleDataRange = await getRoleDataRange(id);
-        debugger;
-        const treeData = await getOrganizationTreeList();
+        const treeData = await getOrganizationTreeList(false);
         updateSchema({
           field: 'customOrganizationIds',
           componentProps: {
             'tree-data': treeData,
+            defaultExpandAll: true,
           },
         });
         roleId.value = id;

@@ -1,5 +1,5 @@
 import { omit } from 'lodash-es';
-import { getPositionList } from '/@/api/position';
+import { getPositionList, getOrganizationPositionList, checkPosition } from '/@/api/position';
 import { statusOptions } from '/@/utils/status';
 import { Status } from '/@/utils/status';
 import { Tag } from 'ant-design-vue';
@@ -10,16 +10,23 @@ import { FormSchema } from '/@/components/Table';
 import { DescItem } from '../../../components/Description/src/typing';
 import { commonTagRender } from '/@/utils/tagUtil';
 import { formatToDate } from '/@/utils/dateUtil';
+import { GetPositionModel } from '../../../api/position/model/positionModel';
+import { Rule } from '/@/components/Form';
 
-export const getPositionOptions = async (query: any) => {
-  const positionList = await getPositionList(query);
+export const getPositionOptions = async (id: Nullable<Number>, isAll: boolean) => {
+  let positionList: GetPositionModel[] = [];
+  if (id) {
+    positionList = await getOrganizationPositionList(id, isAll);
+  } else {
+    positionList = await getPositionList({});
+  }
   const positionOptions = positionList.reduce((prev, next: Recordable) => {
     if (next) {
       prev.push({
         ...omit(next, ['name', 'id']),
         label: next['name'],
         value: next['id'],
-        disabled: next['status'] === Status.Invalid,
+        disabled: next['status'] === Status.Invalid || next['isBelong'] == false,
       });
     }
     return prev;
@@ -32,6 +39,7 @@ export const columns: BasicColumn[] = [
     title: '名称',
     dataIndex: 'name',
     width: 120,
+    slots: { customRender: 'name' },
   },
   {
     title: '状态',
@@ -70,22 +78,50 @@ export const positionSchemas: FormSchema[] = [
     field: 'name',
     component: 'Input',
     label: '名称',
-    rules: [
-      {
-        required: true,
-        message: '岗位标示不允许为空',
-      },
-      {
-        max: 50,
-        message: '岗位标示长度不允许超过50个字符',
-        validateTrigger: ['change', 'blur'],
-      },
-    ],
+    colProps: {
+      span: 12,
+    },
   },
   {
     field: 'sort',
     component: 'InputNumber',
+    componentProps: {
+      style: 'width:100%',
+    },
     label: '排序',
+    colProps: {
+      span: 12,
+    },
+  },
+  {
+    field: 'isPublic',
+    label: '公共',
+    component: 'RadioButtonGroup',
+    componentProps: {
+      options: [
+        { label: '否', value: false },
+        { label: '是', value: true },
+      ],
+    },
+    defaultValue: false,
+    colProps: {
+      span: 12,
+    },
+  },
+  {
+    field: 'isStatic',
+    label: '静态',
+    component: 'RadioButtonGroup',
+    componentProps: {
+      options: [
+        { label: '否', value: false },
+        { label: '是', value: true },
+      ],
+    },
+    defaultValue: false,
+    colProps: {
+      span: 12,
+    },
   },
   {
     field: 'status',
@@ -95,11 +131,17 @@ export const positionSchemas: FormSchema[] = [
       options: statusOptions,
     },
     defaultValue: Status.Valid,
+    colProps: {
+      span: 12,
+    },
   },
   {
     field: 'remark',
     component: 'InputTextArea',
     label: '备注',
+    colProps: {
+      span: 24,
+    },
   },
 ];
 
@@ -149,3 +191,37 @@ export const positionDetailSchemas: DescItem[] = [
     },
   },
 ];
+
+const checkPositionRule = async (value: string, id: Nullable<number>) => {
+  if (value) {
+    const exist = await checkPosition({
+      id: id,
+      name: value,
+    });
+    if (exist) {
+      return Promise.reject(`已经存在${value}的职位`);
+    }
+  }
+  return Promise.resolve();
+};
+
+export const getNameRules = (id: Nullable<number>): Rule[] => {
+  return [
+    {
+      required: true,
+      message: '岗位名称不允许为空',
+    },
+    {
+      max: 50,
+      message: '岗位名称长度不允许超过50个字符',
+      validateTrigger: ['change', 'blur'],
+    },
+    {
+      type: 'string',
+      validateTrigger: ['change', 'blur'],
+      validator: (rules, value) => {
+        return checkPositionRule(value, id);
+      },
+    },
+  ];
+};

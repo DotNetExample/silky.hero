@@ -66,6 +66,14 @@
       @register="registerOrganizationUserDrawer"
       @success="handleAddOrganizationUsers"
     />
+    <OrganizationRoleDrawer
+      @register="registerOrganizationRoleDrawer"
+      @success="handleAllocationOrganizationRoles"
+    />
+    <OrganizationPositionDrawer
+      @register="registerOrganizationPositionDrawer"
+      @success="handleAllocationOrganizationPositions"
+    />
     <OrganizationDetailDrawer @register="registerOrganizationDetailDrawer" />
   </PageWrapper>
 </template>
@@ -86,15 +94,24 @@
     deleteOrganization,
     addOrganizationUsers,
     removeOrganizationUsers,
+    setAllocationOrganizationRoles,
+    setAllocationOrganizationPositions,
   } from '/@/api/organization';
   import { treeMap } from '/@/utils/helper/treeHelper';
   import { GetOrgizationTreeModel } from '/@/api/organization/model/organizationModel';
-  import { userColumns } from './organization.data';
+  import {
+    getOrganizationRolesOptions,
+    getOrganizationPositionsOptions,
+    userColumns,
+  } from './organization.data';
   import { useDrawer } from '/@/components/Drawer';
   import OrganizationDrawer from './OrganizationDrawer.vue';
   import OrganizationUserDrawer from './OrganizationUserDrawer.vue';
   import OrganizationDetailDrawer from './OrganizationDetailDrawer.vue';
+  import OrganizationRoleDrawer from './OrganizationRoleDrawer.vue';
+  import OrganizationPositionDrawer from './OrganizationPositionDrawer.vue';
   import { usePermission } from '/@/hooks/web/usePermission';
+  import { getOrganizationTreeList } from './organization.data';
   export default defineComponent({
     name: 'OrganizationManagement',
     components: {
@@ -108,6 +125,8 @@
       OrganizationDrawer,
       OrganizationUserDrawer,
       OrganizationDetailDrawer,
+      OrganizationRoleDrawer,
+      OrganizationPositionDrawer,
     },
     setup() {
       const treeRef = ref<Nullable<TreeActionType>>(null);
@@ -128,6 +147,10 @@
       const [registerOrganizationUserDrawer, { openDrawer: openOrganizationUserDrawer }] =
         useDrawer();
       const [registerOrganizationDetailDrawer, { openDrawer: openOrganizationDetailDrawer }] =
+        useDrawer();
+      const [registerOrganizationRoleDrawer, { openDrawer: openOrganizationRoleDrawer }] =
+        useDrawer();
+      const [registerOrganizationPositionDrawer, { openDrawer: openOrganizationPositionDrawer }] =
         useDrawer();
       const { createConfirm, notification } = useMessage();
       function getTree() {
@@ -194,7 +217,7 @@
       function setCanAddOrganizationUsers(orgId: number) {
         nextTick(async () => {
           const orgInfo = await getOrganizationById(orgId);
-          if (orgInfo.status == Status.Valid) {
+          if (orgInfo.status == Status.Valid && orgInfo.isBelong) {
             canAddOrganizationUsers.value = true;
           } else {
             canAddOrganizationUsers.value = false;
@@ -218,20 +241,8 @@
       }
 
       async function loadOrganizationTreeData() {
-        const organizationTreeList = await getOrganizationTree();
-        treeData.value = treeMap(organizationTreeList, {
-          conversion: (node: GetOrgizationTreeModel) => {
-            const orgIcon =
-              node.status == Status.Valid
-                ? 'ant-design:folder-outlined'
-                : 'ant-design:folder-filled';
-            return {
-              title: node.name,
-              key: node.id,
-              icon: orgIcon,
-            };
-          },
-        });
+       // const organizationTreeList = await getOrganizationTree();
+        treeData.value = await getOrganizationTreeList(true, false);
       }
       function handleCreateOrganization(data: any) {
         nextTick(async () => {
@@ -276,6 +287,35 @@
           }
         });
       }
+      function handleAllocationOrganizationRoles(data: any) {
+        nextTick(async () => {
+          loadingRef.value = true;
+          try {
+            await setAllocationOrganizationRoles(data.id, data.roleIds);
+            loadingRef.value = false;
+            notification.success({
+              message: `分配组织机构${data.organizationName}的角色成功`,
+            });
+          } catch (err) {
+            loadingRef.value = false;
+          }
+        });
+      }
+
+      function handleAllocationOrganizationPositions(data: any) {
+        nextTick(async () => {
+          loadingRef.value = true;
+          try {
+            await setAllocationOrganizationPositions(data.id, data.positionIds);
+            loadingRef.value = false;
+            notification.success({
+              message: `分配组织机构${data.organizationName}的职位成功`,
+            });
+          } catch (err) {
+            loadingRef.value = false;
+          }
+        });
+      }
 
       function handleRemoveUser(record: Recordable) {
         nextTick(async () => {
@@ -293,9 +333,10 @@
         });
       }
 
-      function getRightMenuList(node: any): ContextMenuItem[] {
+      async function getRightMenuList(node: any): Promise<ContextMenuItem[]> {
+        const organizationInfo = await getOrganizationById(node.eventKey);
         let rigthMenList: ContextMenuItem[] = [];
-        if (hasPermission('Organization.Update')) {
+        if (hasPermission('Organization.Update') && organizationInfo.isBelong) {
           rigthMenList.push({
             label: '编辑',
             handler: () => {
@@ -307,7 +348,11 @@
             icon: 'clarity:note-edit-line',
           });
         }
-        if (hasPermission('Organization.Create')) {
+        if (
+          hasPermission('Organization.Create') &&
+          organizationInfo.status === Status.Valid &&
+          organizationInfo.isBelong
+        ) {
           rigthMenList.push({
             label: '添加子机构',
             handler: () => {
@@ -319,7 +364,54 @@
             icon: 'bi:plus',
           });
         }
-        if (hasPermission('Organization.Delete')) {
+        if (
+          hasPermission('Organization.AllocationRole') &&
+          organizationInfo.status === Status.Valid &&
+          organizationInfo.isBelong
+        ) {
+          rigthMenList.push({
+            label: '分配角色',
+            handler: () => {
+              nextTick(async () => {
+                const roleOptions = await getOrganizationRolesOptions();
+                const roleIds = organizationInfo.organizationRoles.map((item) => item.roleId);
+                openOrganizationRoleDrawer(true, {
+                  roleOptions: roleOptions,
+                  organizationId: organizationInfo.id,
+                  organizationName: organizationInfo.name,
+                  roleIds: roleIds,
+                });
+              });
+            },
+            icon: 'carbon:user-role',
+          });
+        }
+        if (
+          hasPermission('Organization.AllocationPosition') &&
+          organizationInfo.status === Status.Valid &&
+          organizationInfo.isBelong
+        ) {
+          rigthMenList.push({
+            label: '分配职位',
+            handler: () => {
+              nextTick(async () => {
+                const positionOptions = await getOrganizationPositionsOptions();
+                const positionIds = organizationInfo.organizationPositions.map(
+                  (item) => item.positionId,
+                );
+                openOrganizationPositionDrawer(true, {
+                  positionOptions: positionOptions,
+                  organizationId: organizationInfo.id,
+                  organizationName: organizationInfo.name,
+                  positionIds: positionIds,
+                });
+              });
+            },
+            icon: 'fluent:position-backward-20-regular',
+          });
+        }
+
+        if (hasPermission('Organization.Delete') && organizationInfo.isBelong) {
           rigthMenList.push({
             label: '删除',
             handler: () => {
@@ -344,12 +436,13 @@
                     loadingRef.value = false;
                   }
                 },
+                iconType: 'warning',
               });
             },
             icon: 'ant-design:delete-outlined',
           });
         }
-        if (hasPermission('Organization.LookDetail')) {
+        if (hasPermission('Organization.LookDetail') && organizationInfo.isBelong) {
           rigthMenList.push({
             label: '查看',
             handler: () => {
@@ -358,7 +451,7 @@
             icon: 'clarity:info-standard-line',
           });
         }
-        return rigthMenList;
+        return Promise.resolve(rigthMenList);
       }
       return {
         treeData,
@@ -373,10 +466,14 @@
         registerOrganizationDrawer,
         registerOrganizationUserDrawer,
         registerOrganizationDetailDrawer,
+        registerOrganizationRoleDrawer,
+        registerOrganizationPositionDrawer,
         handleCreateOrganization,
         handleCreateOrganizationRoot,
         handleAddOrganizationUsersDrawer,
         handleAddOrganizationUsers,
+        handleAllocationOrganizationRoles,
+        handleAllocationOrganizationPositions,
         handleRemoveUser,
       };
     },

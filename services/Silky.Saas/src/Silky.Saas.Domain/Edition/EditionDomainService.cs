@@ -122,9 +122,10 @@ public class EditionDomainService : IScopedDependency, IEditionDomainService
         await RemoveEditionFeatureCache(edition.Id);
     }
 
-    public async Task<GetEditionFeatureOutput> GetEditionFeatureAsync(string featureCode)
+    public async Task<GetEditionFeatureOutput> GetEditionFeatureAsync(string featureCode, long? tenantId = null)
     {
-        var tenant = await _tenantRepository.FindAsync(_session.TenantId.To<long>());
+        var tId = tenantId.HasValue ? tenantId.Value : _session.TenantId.To<long>();
+        var tenant = await _tenantRepository.FindAsync(tId);
         var editionFeature =
             await EditionFeatureRepository
                 .AsQueryable(false)
@@ -143,6 +144,8 @@ public class EditionDomainService : IScopedDependency, IEditionDomainService
 
     private async Task RemoveEditionFeatureCache(long editionId)
     {
+        await _cache.RemoveMatchKeyAsync("*CurrentUserMenus:*");
+        await _cache.RemoveMatchKeyAsync("*CurrentUserPermissionCodes:*");
         var editionTenants =
             await _tenantRepository.AsQueryable(false).Where(p => p.EditionId == editionId).ToArrayAsync();
         foreach (var tenant in editionTenants)

@@ -38,6 +38,11 @@ public class EditionAppService : IEditionAppService
         return _editionDomainService.DeleteAsync(id);
     }
 
+    public Task<bool> CheckAsync(CheckEditionInput input)
+    {
+        return _editionDomainService.EditionRepository.AnyAsync(p => p.Name != input.Name && p.Id != input.Id, false);
+    }
+
     public async Task<PagedList<GetEditionPageOutput>> GetPageAsync(GetEditionPageInput input)
     {
         var pageOutputs = await _editionDomainService.EditionRepository
@@ -73,4 +78,10 @@ public class EditionAppService : IEditionAppService
     {
         return _editionDomainService.GetEditionFeatureAsync(featureCode);
     }
+
+    public Task<GetEditionFeatureOutput> GetTenantEditionFeatureAsync(string featureCode, long tenantId)
+    {
+        return _editionDomainService.GetEditionFeatureAsync(featureCode, tenantId);
+    }
+    
 }

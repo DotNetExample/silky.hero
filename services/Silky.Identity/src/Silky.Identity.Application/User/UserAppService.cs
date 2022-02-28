@@ -16,10 +16,12 @@ using Silky.Core.Runtime.Session;
 using Silky.Hero.Common.EntityFrameworkCore;
 using Silky.Hero.Common.Enums;
 using Silky.Hero.Common.Session;
+using Silky.Identity.Application.Contracts.Role.Dtos;
 using Silky.Identity.Application.Contracts.User;
 using Silky.Identity.Application.Contracts.User.Dtos;
 using Silky.Identity.Domain;
 using Silky.Identity.Domain.Extensions;
+using Silky.Identity.Domain.Shared;
 using Silky.Transaction.Tcc;
 using IdentityUser = Silky.Identity.Domain.IdentityUser;
 
@@ -47,6 +49,35 @@ public class UserAppService : IUserAppService
         (await UserManager.CheckAllowUserMaxCount(user)).CheckErrors();
         (await UserManager.SetDefaultRolesAsync(user)).CheckErrors();
         (await UserManager.CreateAsync(user, input.Password)).CheckErrors();
+    }
+
+    public async Task<bool> CheckAsync(CheckAccountInput input)
+    {
+        var exsit = false;
+        switch (input.AccountType)
+        {
+            case AccountType.UserName:
+                exsit = await UserManager.UserRepository.AnyAsync(
+                    p => p.Id != input.Id && p.NormalizedUserName == input.Account.ToUpper(), false);
+                break;
+            case AccountType.Email:
+                exsit = await UserManager.UserRepository.AnyAsync(
+                    p => p.Id != input.Id && p.NormalizedEmail == input.Account.ToUpper(),
+                    false);
+                break;
+            case AccountType.MobilePhone:
+                exsit = await UserManager.UserRepository.AnyAsync(
+                    p => p.Id != input.Id && p.MobilePhone == input.Account, false);
+                break;
+            case AccountType.JobNumber:
+                exsit = await UserManager.UserRepository.AnyAsync(
+                    p => p.Id != input.Id && p.JobNumber == input.Account, false);
+                break;
+            default:
+                throw new UserFriendlyException("账号类型不正确");
+        }
+
+        return exsit;
     }
 
     public async Task UpdateAsync(UpdateUserInput input)
@@ -158,6 +189,11 @@ public class UserAppService : IUserAppService
         (await UserManager.RemovePasswordAsync(user)).CheckErrors();
         (await UserManager.AddPasswordAsync(user, input.NewPassword)).CheckErrors();
         await UserManager.UpdateAsync(user);
+    }
+
+    public Task<ICollection<GetRoleOutput>> GetUserRoleListAsync(long userId, string realName, string name)
+    {
+        return UserManager.GetUserRoleListAsync(userId, realName, name);
     }
 
     public Task<ICollection<GetUserOutput>> GetOrganizationUsersAsync(long organizationId)
@@ -346,7 +382,7 @@ public class UserAppService : IUserAppService
         await _distributedCache.RemoveAsync(typeof(GetCurrentUserDataRange), $"CurrentUserDataRange:userId:{userId}");
         await _distributedCache.RemoveAsync(typeof(ICollection<GetCurrentUserMenuOutput>),
             $"CurrentUserMenus:userId:{userId}");
-        await _distributedCache.RemoveAsync(typeof(string[]), $"CurrentUserPermissioncodes:userId:{userId}");
+        await _distributedCache.RemoveAsync(typeof(string[]), $"CurrentUserPermissionCodes:userId:{userId}");
     }
 
     //public async Task<GetUserPositionOutput> GetUserPositionInfo(long userId, long organizationId)

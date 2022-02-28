@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Silky.Hero.Common.Enums;
 using Silky.Position.Application.Contracts.Position.Dtos;
 using Silky.Position.Domain.Shared;
 using Silky.Rpc.CachingInterceptor;
@@ -24,6 +25,8 @@ public interface IPositionAppService
     /// <param name="input"></param>
     /// <returns></returns>
     [Authorize(PositionPermissions.Positions.Create)]
+    [RemoveCachingIntercept(typeof(ICollection<GetPositionOutput>), "allocationOrganizationPositionList")]
+    [RemoveCachingIntercept(typeof(ICollection<GetPositionOutput>), "getPublicPositionList")]
     Task CreateAsync(CreatePositionInput input);
 
     /// <summary>
@@ -33,6 +36,8 @@ public interface IPositionAppService
     /// <returns></returns>
     [RemoveCachingIntercept(typeof(GetPositionOutput), "id:{0}")]
     [RemoveCachingIntercept(typeof(bool), "HasPosition:{0}")]
+    [RemoveCachingIntercept(typeof(ICollection<GetPositionOutput>), "allocationOrganizationPositionList")]
+    [RemoveCachingIntercept(typeof(ICollection<GetPositionOutput>), "getPublicPositionList")]
     [Authorize(PositionPermissions.Positions.Update)]
     Task UpdateAsync(UpdatePositionInput input);
 
@@ -54,6 +59,8 @@ public interface IPositionAppService
     [HttpDelete("{id:long}")]
     [RemoveCachingIntercept(typeof(GetPositionOutput), "id:{0}")]
     [RemoveCachingIntercept(typeof(bool), "HasPosition:{0}")]
+    [RemoveCachingIntercept(typeof(ICollection<GetPositionOutput>), "allocationOrganizationPositionList")]
+    [RemoveCachingIntercept(typeof(ICollection<GetPositionOutput>), "getPublicPositionList")]
     [Authorize(PositionPermissions.Positions.Delete)]
     Task DeleteAsync([CacheKey(0)] long id);
 
@@ -65,11 +72,24 @@ public interface IPositionAppService
     Task<PagedList<GetPositionPageOutput>> GetPageAsync(GetPositionPageInput input);
 
     /// <summary>
-    /// 不分页查询职位信息
+    /// 通过组织id获取可用于分配的岗位列表
     /// </summary>
-    /// <param name="name"></param>
+    /// <param name="organizationId"></param>
+    /// <param name="isAll"></param>
     /// <returns></returns>
-    Task<ICollection<GetPositionOutput>> GetListAsync([FromQuery]string name);
+    [HttpGet("{organizationId:long}/list")]
+    Task<ICollection<GetAllocationOrganizationPositionOutput>> GetPositionListAsync(long organizationId,bool? isAll);
+
+    /// <summary>
+    /// 判断是否存在某个职位
+    /// </summary>
+    /// <param name="input"></param>
+    /// <returns></returns>
+    [HttpPost("check")]
+    Task<bool> CheckAsync(CheckPositionInput input);
+    
+    [HttpPost("check/datarange/{organizationId:long}/{positionId:long}")]
+    Task<bool> CheckHasDataRangeAsync(long organizationId, long positionId);
 
     /// <summary>
     /// 判断是否存在职位
@@ -79,4 +99,15 @@ public interface IPositionAppService
     [ProhibitExtranet]
     [GetCachingIntercept("HasPosition:{0}")]
     Task<bool> HasPositionAsync([CacheKey(0)] long positionId);
+
+    [HttpGet("list")]
+    Task<ICollection<GetPositionOutput>> GetListAsync([FromQuery] string name, [FromQuery] Status? status);
+
+    [GetCachingIntercept("allocationOrganizationPositionList")]
+    [ProhibitExtranet]
+    Task<ICollection<GetPositionOutput>> GetAllocationOrganizationPositionListAsync();
+
+    [GetCachingIntercept("getPublicPositionList")]
+    [ProhibitExtranet]
+    Task<ICollection<GetPositionOutput>> GetPublicPositionListAsync();
 }

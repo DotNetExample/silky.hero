@@ -5,6 +5,7 @@ export interface GetOrgizationTreeModel {
   code: string;
   remark: string;
   status: number;
+  isBelong: boolean;
   children: GetOrgizationTreeModel[] | undefined;
 }
 
@@ -23,12 +24,25 @@ export interface GetOrgizationUserModel {
 }
 
 export interface GetOrgizationModel {
+  organizationRoles: any;
+  organizationPositions: any;
   id: number;
   parentId: number;
   name: string;
   sort: number;
   remark: string;
   status: number;
+  isBelong: boolean;
+}
+
+export interface OrgizationRoleModel {
+  roleId: number;
+  name: string;
+  realName: string;
+  status: number;
+  isDefault: boolean;
+  isPublic: boolean;
+  isStatic: boolean;
 }
 
 export interface UpdateOrgizationModel {

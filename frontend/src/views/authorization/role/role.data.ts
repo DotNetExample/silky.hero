@@ -2,7 +2,7 @@ import { BasicColumn } from '/@/components/Table';
 import { FormSchema } from '/@/components/Table';
 import { statusOptions } from '/@/utils/status';
 import { Status } from '/@/utils/status';
-import { getRoleList } from '/@/api/role';
+import { getRoleList, checkRole } from '/@/api/role';
 import { omit } from 'lodash-es';
 import { OptionsItem } from '/@/utils/model';
 import { Tag } from 'ant-design-vue';
@@ -11,6 +11,13 @@ import { formatToDate } from '/@/utils/dateUtil';
 import { DataRange } from '/@/utils/dataRangeUtil';
 import { DescItem } from '/@/components/Description/index';
 import { commonTagRender } from '/@/utils/tagUtil';
+import { getUserRoleList } from '/@/api/user';
+import { Rule } from '/@/components/Form';
+
+export enum RoleNameType {
+  Name = 0,
+  RealName = 1,
+}
 
 export const columns: BasicColumn[] = [
   {
@@ -68,39 +75,17 @@ export const roleSchemas: FormSchema[] = [
     component: 'Input',
     label: '角色标识',
     helpMessage: '英文字符和数字组合,不允许超过50个字符',
-    rules: [
-      {
-        required: true,
-        message: '角色不允许为空',
-      },
-      {
-        max: 50,
-        message: '角色标识长度不允许超过50个字符',
-        validateTrigger: ['change', 'blur'],
-      },
-      {
-        type: 'string',
-        pattern: new RegExp('^\\w+$'),
-        message: '角色格式不正确',
-        validateTrigger: ['change', 'blur'],
-      },
-    ],
+    colProps: {
+      span: 12,
+    },
   },
   {
     field: 'realName',
     component: 'Input',
     label: '角色名称',
-    rules: [
-      {
-        required: true,
-        message: '角色名称不允许为空',
-      },
-      {
-        max: 50,
-        message: '角色名称长度不允许超过50个字符',
-        validateTrigger: ['change', 'blur'],
-      },
-    ],
+    colProps: {
+      span: 12,
+    },
   },
   {
     field: 'sort',
@@ -109,6 +94,9 @@ export const roleSchemas: FormSchema[] = [
       style: { width: '100%' },
     },
     label: '排序',
+    colProps: {
+      span: 12,
+    },
   },
   {
     field: 'isDefault',
@@ -121,10 +109,13 @@ export const roleSchemas: FormSchema[] = [
       ],
     },
     defaultValue: false,
+    colProps: {
+      span: 12,
+    },
   },
   {
     field: 'isPublic',
-    label: '公开',
+    label: '公共',
     component: 'RadioButtonGroup',
     componentProps: {
       options: [
@@ -133,6 +124,24 @@ export const roleSchemas: FormSchema[] = [
       ],
     },
     defaultValue: false,
+    colProps: {
+      span: 12,
+    },
+  },
+  {
+    field: 'isStatic',
+    label: '静态',
+    component: 'RadioButtonGroup',
+    componentProps: {
+      options: [
+        { label: '否', value: false },
+        { label: '是', value: true },
+      ],
+    },
+    defaultValue: false,
+    colProps: {
+      span: 12,
+    },
   },
   {
     field: 'status',
@@ -142,6 +151,9 @@ export const roleSchemas: FormSchema[] = [
       options: statusOptions,
     },
     defaultValue: Status.Valid,
+    colProps: {
+      span: 12,
+    },
   },
   {
     field: 'remark',
@@ -149,6 +161,68 @@ export const roleSchemas: FormSchema[] = [
     label: '备注',
   },
 ];
+
+const checkRoleRule = async (value: string, id: Nullable<number>, roleNameType: RoleNameType) => {
+  if (value) {
+    const exist = await checkRole({
+      id: id,
+      name: value,
+      roleNameType: roleNameType,
+    });
+    if (exist) {
+      return Promise.reject(`已经存在${value}的角色`);
+    }
+  }
+  return Promise.resolve();
+};
+
+export const getNameRules = (id: Nullable<number>): Rule[] => {
+  return [
+    {
+      required: true,
+      message: '角色不允许为空',
+    },
+    {
+      max: 50,
+      message: '角色标识长度不允许超过50个字符',
+      validateTrigger: ['change', 'blur'],
+    },
+    {
+      type: 'string',
+      pattern: new RegExp('^\\w+$'),
+      message: '角色格式不正确',
+      validateTrigger: ['change', 'blur'],
+    },
+    {
+      type: 'string',
+      validateTrigger: ['change', 'blur'],
+      validator: (rules, value) => {
+        return checkRoleRule(value, id, RoleNameType.Name);
+      },
+    },
+  ];
+};
+
+export const getRealNameRules = (id: Nullable<number>): Rule[] => {
+  return [
+    {
+      required: true,
+      message: '角色名称不允许为空',
+    },
+    {
+      max: 50,
+      message: '角色名称长度不允许超过50个字符',
+      validateTrigger: ['change', 'blur'],
+    },
+    {
+      type: 'string',
+      validateTrigger: ['change', 'blur'],
+      validator: (rules, value) => {
+        return checkRoleRule(value, id, RoleNameType.RealName);
+      },
+    },
+  ];
+};
 
 export const roleDataSchemas: FormSchema[] = [
   {
@@ -165,6 +239,7 @@ export const roleDataSchemas: FormSchema[] = [
     componentProps: {
       checkable: true,
       multiple: true,
+      defaultExpandAll: true,
     },
     rules: [
       {
@@ -186,9 +261,9 @@ export const roleDataSchemas: FormSchema[] = [
   },
 ];
 
-export const getRoleOptions = async (query:any) => {
+export const getRoleOptions = async (query: any) => {
   const roleList = await getRoleList(query);
-  const positionOptions = roleList.reduce((prev, next: Recordable) => {
+  const roleOptions = roleList.reduce((prev, next: Recordable) => {
     if (next) {
       prev.push({
         ...omit(next, ['realName', 'id']),
@@ -199,7 +274,23 @@ export const getRoleOptions = async (query:any) => {
     }
     return prev;
   }, [] as OptionsItem[]);
-  return positionOptions;
+  return roleOptions;
+};
+
+export const getUserRoleOptions = async (userId: number) => {
+  const roleList = await getUserRoleList(userId);
+  const roleOptions = roleList.reduce((prev, next: Recordable) => {
+    if (next) {
+      prev.push({
+        ...omit(next),
+        label: next['realName'],
+        value: next['name'],
+        disabled: next['status'] === Status.Invalid,
+      });
+    }
+    return prev;
+  }, [] as OptionsItem[]);
+  return roleOptions;
 };
 
 export const roleDetailSchemas: DescItem[] = [
@@ -214,6 +305,28 @@ export const roleDetailSchemas: DescItem[] = [
   {
     label: '是否默认',
     field: 'isDefault',
+    render: (value) => {
+      if (value === true) {
+        return commonTagRender('blue', '是');
+      } else {
+        return commonTagRender('red', '否');
+      }
+    },
+  },
+  {
+    label: '是否公共',
+    field: 'isPublic',
+    render: (value) => {
+      if (value === true) {
+        return commonTagRender('blue', '是');
+      } else {
+        return commonTagRender('red', '否');
+      }
+    },
+  },
+  {
+    label: '是否静态',
+    field: 'isStatic',
     render: (value) => {
       if (value === true) {
         return commonTagRender('blue', '是');
