@@ -1,16 +1,17 @@
 {
-  "name": "vben-admin",
-  "version": "2.8.0",
+  "name": "Silky-Hero",
+  "version": "1.0.0",
   "author": {
-    "name": "vben",
-    "email": "anncwb@126.com",
-    "url": "https://github.com/anncwb"
+    "name": "liuhll",
+    "email": "1029765111@qq.com",
+    "url": "https://github.com/liuhll"
   },
   "scripts": {
     "bootstrap": "yarn install",
     "serve": "npm run dev",
     "dev": "vite",
     "build": "cross-env NODE_ENV=production vite build && esno ./build/script/postBuild.ts",
+    "build:production": "npm run build",
     "build:test": "cross-env vite build --mode test && esno ./build/script/postBuild.ts",
     "build:no-cache": "yarn clean:cache && npm run build",
     "report": "cross-env REPORT=true npm run build",

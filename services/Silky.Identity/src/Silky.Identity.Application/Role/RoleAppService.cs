@@ -166,7 +166,7 @@ public class RoleAppService : IRoleAppService
             .AsQueryable(false)
             .Where(!name.IsNullOrEmpty(), p => p.Name.Contains(name))
             .Where(!realName.IsNullOrEmpty(), p => p.RealName.Contains(realName))
-            .Where(p => status.HasValue, p => p.Status == status)
+            .Where(status.HasValue, p => p.Status == status)
             .OrderByDescending(p => p.Sort)
             .ThenByDescending(p => p.CreatedTime)
             .ProjectToType<GetRoleOutput>()
@@ -281,7 +281,7 @@ public class RoleAppService : IRoleAppService
                 $"CurrentUserMenus:userId:{userRole.UserId}");
             await _distributedCache.RemoveAsync(typeof(string[]),
                 $"CurrentUserPermissionCodes:userId:{userRole.UserId}");
-            await _distributedCache.RemoveAsync(typeof(ICollection<GetOrganizationTreeOutput>), $"tree:userId:{userRole.UserId}");
+            await _distributedCache.RemoveAsync(typeof(ICollection<GetOrganizationTreeOutput>), $"OrganizationTree:userId:{userRole.UserId}");
             await _distributedCache.RemoveMatchKeyAsync(typeof(bool), $"permissionName:*:userId:{userRole.UserId}");
             await _distributedCache.RemoveMatchKeyAsync(typeof(bool), $"roleName:*:userId:{userRole.UserId}");
             await _distributedCache.RemoveMatchKeyAsync(typeof(GetOrganizationOutput), "id:*");
