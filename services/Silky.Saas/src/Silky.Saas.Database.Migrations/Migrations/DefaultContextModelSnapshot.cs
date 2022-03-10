@@ -252,6 +252,10 @@ namespace Silky.Saas.Database.Migrations.Migrations
                     b.Property<DateTimeOffset>("CreatedTime")
                         .HasColumnType("datetime(6)");
 
+                    b.Property<int>("DefaultValue")
+                        .HasColumnType("int")
+                        .HasColumnName("DefaultValue");
+
                     b.Property<long?>("DeletedBy")
                         .HasColumnType("bigint");
 
@@ -301,6 +305,7 @@ namespace Silky.Saas.Database.Migrations.Migrations
                             Id = 1L,
                             Code = "AllowMaxUserCount",
                             CreatedTime = new DateTimeOffset(new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            DefaultValue = 0,
                             Description = "0 = 无限制",
                             FeatureCatalogId = 1L,
                             FeatureType = 0,
@@ -312,6 +317,7 @@ namespace Silky.Saas.Database.Migrations.Migrations
                             Id = 2L,
                             Code = "EnabledAuditingLog",
                             CreatedTime = new DateTimeOffset(new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            DefaultValue = 0,
                             Description = "在应用程序中启用审计日志页面.",
                             FeatureCatalogId = 2L,
                             FeatureType = 1,
@@ -323,6 +329,7 @@ namespace Silky.Saas.Database.Migrations.Migrations
                             Id = 3L,
                             Code = "EnabledMenuManage",
                             CreatedTime = new DateTimeOffset(new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            DefaultValue = 0,
                             Description = "在应用程序中启动菜单管理.",
                             FeatureCatalogId = 3L,
                             FeatureType = 1,
@@ -332,8 +339,21 @@ namespace Silky.Saas.Database.Migrations.Migrations
                         new
                         {
                             Id = 4L,
+                            Code = "EnabledSilkyDashboard",
+                            CreatedTime = new DateTimeOffset(new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            DefaultValue = 0,
+                            Description = "允许授权用户登录微服务管理端.",
+                            FeatureCatalogId = 3L,
+                            FeatureType = 1,
+                            IsDeleted = false,
+                            Name = "启用微服务管理端"
+                        },
+                        new
+                        {
+                            Id = 5L,
                             Code = "EnabledSaasManage",
                             CreatedTime = new DateTimeOffset(new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            DefaultValue = 0,
                             Description = "在应用程序中启动Saas管理.",
                             FeatureCatalogId = 4L,
                             FeatureType = 1,
@@ -441,6 +461,12 @@ namespace Silky.Saas.Database.Migrations.Migrations
                         .HasColumnType("varchar(256)")
                         .HasColumnName("Name");
 
+                    b.Property<string>("RealName")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("varchar(256)")
+                        .HasColumnName("RealName");
+
                     b.Property<string>("Remark")
                         .HasMaxLength(512)
                         .HasColumnType("varchar(512)")
@@ -478,6 +504,7 @@ namespace Silky.Saas.Database.Migrations.Migrations
                             EditionId = 3L,
                             IsDeleted = false,
                             Name = "Silky",
+                            RealName = "Silky",
                             Remark = "silky微服务开发社区",
                             Sort = 0,
                             Status = 1
@@ -489,6 +516,7 @@ namespace Silky.Saas.Database.Migrations.Migrations
                             EditionId = 2L,
                             IsDeleted = false,
                             Name = "Hero",
+                            RealName = "Hero",
                             Remark = "SilkyHero快速开发框架",
                             Sort = 0,
                             Status = 1

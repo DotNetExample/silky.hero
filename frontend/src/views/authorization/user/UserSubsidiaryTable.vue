@@ -18,6 +18,7 @@
   import { OptionsItem } from '/@/utils/model';
   import { TreeItem } from '/@/components/Tree';
   const positionOptions = ref<OptionsItem[]>([]);
+  const isLeaderOptions = ref<OptionsItem[]>([]);
   const organizaionTreeList = ref<TreeItem[]>([]);
   import {
     BasicTable,
@@ -27,8 +28,9 @@
     ActionItem,
     EditRecordRow,
   } from '/@/components/Table';
-  import { checkOrganizationDataRange } from '/@/api/organization';
+  import { checkOrganizationDataRange, checkOrganizationHasLeader } from '/@/api/organization';
   import { checkPositionDataRange } from '/@/api/position';
+  import { getIsLeaderOptions } from './user.data';
 
   export default defineComponent({
     components: { BasicTable, TableAction },
@@ -41,11 +43,13 @@
     },
     setup(props) {
       const isEditable = computed(() => props.editable);
+      const userId = ref<Nullable<number>>(null);
       const columns: BasicColumn[] = [
         {
           title: '所属部门',
           dataIndex: 'organizationId',
           editRow: true,
+          width: 250,
           editRule: async (text, record) => {
             if (!text) {
               notification.error({
@@ -75,6 +79,7 @@
           dataIndex: 'positionId',
           editRow: true,
           editComponent: 'Select',
+          width: 200,
           editRule: async (text, record) => {
             if (!text) {
               notification.error({
@@ -93,6 +98,35 @@
           editComponentProps: {
             options: unref(positionOptions),
             placeholder: '请选择所属岗位',
+          },
+        },
+        {
+          title: '部门负责人',
+          dataIndex: 'isLeader',
+          editRow: true,
+          width: 100,
+          editComponent: 'Select',
+          editRule: async (text, record) => {
+            if (text == null) {
+              notification.error({
+                message: '请选择是否是部门负责人',
+              });
+              return Promise.reject('请选择是否是部门负责人');
+            }
+            if (
+              Boolean(text) === true &&
+              (await checkOrganizationHasLeader(Number(record.organizationId), unref(userId)))
+            ) {
+              notification.error({
+                message: `该部门已经存在负责人`,
+              });
+              return Promise.reject(`该部门已经存在负责人`);
+            }
+            return Promise.resolve('');
+          },
+          editComponentProps: {
+            options: unref(isLeaderOptions),
+            placeholder: '是否是部门负责人',
           },
         },
       ];
@@ -145,6 +179,20 @@
         setProps({
           columns: tableColumns,
         });
+      }
+
+      function setIsLeaderOptions() {
+        isLeaderOptions.value = getIsLeaderOptions();
+        const tableColumns = getColumns();
+        const isLeaderColumn = tableColumns.find((col) => col.dataIndex === 'isLeader');
+        isLeaderColumn.editComponentProps.options = unref(isLeaderOptions);
+        setProps({
+          columns: tableColumns,
+        });
+      }
+
+      function setUserId(val: Nullable<number>) {
+        userId.value = val;
       }
 
       function clearPositionOptions() {
@@ -237,6 +285,7 @@
         const addRow: EditRecordRow = {
           organizationId: null,
           positionId: null,
+          isLeader: null,
           editable: true,
           isNew: true,
           key: `${Date.now()}`,
@@ -285,6 +334,8 @@
         setTableData,
         setOrganizaionTreeList,
         setPositionOptions,
+        setIsLeaderOptions,
+        setUserId,
         handleEditChange,
         isEditable,
       };

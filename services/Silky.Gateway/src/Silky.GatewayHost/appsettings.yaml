@@ -20,10 +20,16 @@ serilog:
         theme: "Serilog.Sinks.SystemConsole.Themes.SystemConsoleTheme::Literate, Serilog.Sinks.Console"
 healthChecksUI:
   healthChecks:
-    - name: silkyrpc
+    - name: rpc
       uri: http://127.0.0.1:6000/silkyrpc/healthz
+    - name: gateway
+      uri: http://127.0.0.1:6000/silkygateway/healthz
   evaluationTimeinSeconds: 30
   minimumSecondsBetweenFailureNotifications: 60
+dashboard:
+  tenantNameFiledName: tenantName
+  userNameFiledName: account
+  passwordFiledName: password
 skyWalking:
   serviceName: Silky.GatewayHost
   headerVersions:

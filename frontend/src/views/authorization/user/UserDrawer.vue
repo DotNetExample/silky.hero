@@ -4,7 +4,7 @@
     @register="registerDrawer"
     showFooter
     :title="getTitle"
-    width="40%"
+    width="800px"
     destroyOnClose
     @ok="handleSubmit"
   >
@@ -20,7 +20,13 @@
 <script lang="ts">
   import { defineComponent, ref, computed, unref } from 'vue';
   import { BasicForm, useForm } from '/@/components/Form/index';
-  import { getMobilePhoneRules, getEmailRules, getUserNameRules, userSchemas, getJobNumberRules } from './user.data';
+  import {
+    getMobilePhoneRules,
+    getEmailRules,
+    getUserNameRules,
+    userSchemas,
+    getJobNumberRules,
+  } from './user.data';
   import { BasicDrawer, useDrawerInner } from '/@/components/Drawer';
   import { Card } from 'ant-design-vue';
   import UserSubsidiaryTable from './UserSubsidiaryTable.vue';
@@ -38,11 +44,13 @@
         setTableData: (data: any[]) => void;
         setOrganizaionTreeList: () => void;
         setPositionOptions: (id: Nullable<number>) => void;
+        setIsLeaderOptions: () => void;
+        setUserId: (userId: Nullable<number>) => void;
       } | null>(null);
       const getTitle = computed(() => (!unref(isUpdate) ? '新增用户' : '编辑用户'));
       const [registerForm, { setFieldsValue, resetFields, validate, clearValidate, updateSchema }] =
         useForm({
-          labelWidth: 140,
+          labelWidth: 130,
           schemas: userSchemas,
           showActionButtonGroup: false,
         });
@@ -52,6 +60,8 @@
         resetFields();
         await userSubsidiaryTableRef.value?.setOrganizaionTreeList();
         await userSubsidiaryTableRef.value?.setPositionOptions(null);
+        await userSubsidiaryTableRef.value?.setIsLeaderOptions();
+        await userSubsidiaryTableRef.value?.setUserId(data.record.id);
         isUpdate.value = !!data?.isUpdate;
         if (unref(isUpdate)) {
           setFieldsValue({
@@ -90,7 +100,11 @@
           }
           const values = await validate();
           const userSubsidiaries = data.map((item) => {
-            return { organizationId: item.organizationId, positionId: item.positionId };
+            return {
+              organizationId: item.organizationId,
+              positionId: item.positionId,
+              isLeader: item.isLeader,
+            };
           });
           values.userSubsidiaries = userSubsidiaries;
           emit('success', { isUpdate: unref(isUpdate), values: { ...values, id: unref(userId) } });

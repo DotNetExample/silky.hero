@@ -3,6 +3,9 @@ using Silky.Rpc.Auditing;
 
 namespace Silky.Account.Application.Contracts.Account.Dtos;
 
+/// <summary>
+/// 登录参数
+/// </summary>
 public class LoginInput
 {
     /// <summary>
@@ -18,7 +21,7 @@ public class LoginInput
     public string Password { get; set; }
 
     /// <summary>
-    /// 所属租户
+    /// 所属租户标识
     /// </summary>
-    public long? TenantId { get; set; }
+    public string TenantName { get; set; }
 }

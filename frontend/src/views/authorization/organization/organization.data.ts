@@ -24,6 +24,7 @@ export const userColumns: BasicColumn[] = [
   {
     title: '用户名',
     dataIndex: 'userName',
+    slots: { customRender: 'userName' },
     width: 100,
   },
   {
@@ -74,6 +75,12 @@ export const organizationUserColumns: BasicColumn[] = [
     dataIndex: 'positionId',
     slots: { customRender: 'position' },
     width: 200,
+  },
+  {
+    title: '部门负责人',
+    dataIndex: 'isLeader',
+    slots: { customRender: 'isLeader' },
+    width: 100,
   },
 ];
 
@@ -171,9 +178,9 @@ export const organizationDetailSchemas: DescItem[] = [
     field: 'status',
     render: (value) => {
       if (value === Status.Valid) {
-        return commonTagRender('blue', '启用');
+        return commonTagRender('green', '正常');
       } else {
-        return commonTagRender('red', '停用');
+        return commonTagRender('red', '冻结');
       }
     },
   },

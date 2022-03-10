@@ -114,6 +114,11 @@ public class OrganizationAppService : IOrganizationAppService
         return organizations;
     }
 
+    public Task<bool> CheckHasLeaderAsync(long organizationId,long? userId)
+    {
+        return _userAppService.CheckHasLeaderAsync(organizationId,userId);
+    }
+
     public async Task<bool> HasOrganizationAsync(long organizationId)
     {
         return await _organizationDomainService.OrganizationRepository.FindOrDefaultAsync(organizationId) != null;
@@ -147,13 +152,17 @@ public class OrganizationAppService : IOrganizationAppService
 
     public async Task<long[]> GetOrganizationPositionIdsAsync(long organizationId)
     {
-        return await _organizationPositionRepository
+        var setPositionIds = await _organizationPositionRepository
             .AsQueryable(false)
             .Where(p => p.OrganizationId == organizationId)
             .Select(p => p.PositionId)
             .ToArrayAsync();
+
+        var publicPositionIds = (await _positionAppService.GetPublicPositionListAsync())
+            .Select(p => p.Id);
+        return setPositionIds.Union(publicPositionIds).ToArray();
     }
-    
+
     public async Task<ICollection<GetOrganizationOutput>> GetCurrentOrganizationListAsync()
     {
         var currentUserDataRange = await _session.GetCurrentUserDataRangeAsync();

@@ -7,12 +7,11 @@ import {
   CreateOrgizationModel,
 } from './model/organizationModel';
 import { BasicFetchResult } from '/@/api/model/baseModel';
-import { requestParams } from '../../../mock/_util';
 enum Api {
   GetOrganizationTree = '/organization/tree',
   Organization = '/organization',
-  GetAllocationOrganizationRoles = 'organization/role/allocation/list',
-  GetAllocationOrganizationPositions = 'organization/position/allocation/list',
+  GetAllocationOrganizationRoles = '/organization/role/allocation/list',
+  GetAllocationOrganizationPositions = '/organization/position/allocation/list',
 }
 
 export const getOrganizationTree = () => {
@@ -114,5 +113,16 @@ export const checkOrganization = (requestParams) => {
   return defHttp.post({
     url: `/organization/check`,
     params: requestParams,
+  });
+};
+
+export const checkOrganizationHasLeader = (organizationId: number, userId?: Nullable<number>) => {
+  if (userId) { 
+    return defHttp.post({
+      url: `/organization/${organizationId}/checkleader?userId=${userId}`,
+    });
+  }
+  return defHttp.post({
+    url: `/organization/${organizationId}/checkleader`,
   });
 };

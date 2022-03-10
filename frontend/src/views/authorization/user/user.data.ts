@@ -8,6 +8,7 @@ import { DescItem } from '/@/components/Description/index';
 import { commonTagRender } from '/@/utils/tagUtil';
 import { checkAccount } from '/@/api/user';
 import { Rule } from '/@/components/Form';
+import { OptionsItem } from '/@/utils/model';
 
 enum AccountType {
   UserName = 0,
@@ -43,22 +44,22 @@ export const columns: BasicColumn[] = [
     width: 60,
   },
   {
+    title: '是否被锁定',
+    dataIndex: 'isLockout',
+    width: 60,
+    align: 'left',
+    slots: { customRender: 'isLockout' },
+  },
+  {
     title: '状态',
     dataIndex: 'status',
     align: 'left',
     width: 50,
     format: (value: Status) => {
-      const colorValue = value === Status.Valid ? 'blue' : 'red';
+      const colorValue = value === Status.Valid ? 'green' : 'red';
       const valText = value === Status.Valid ? '正常' : '冻结';
       return commonTagRender(colorValue, valText);
     },
-  },
-  {
-    title: '是否被锁定',
-    dataIndex: 'isLockout',
-    width: 120,
-    align: 'left',
-    slots: { customRender: 'isLockout' },
   },
   {
     title: '昵称',
@@ -167,6 +168,19 @@ export const searchFormSchema: FormSchema[] = [
   {
     field: 'isLockout',
     label: '是否锁定',
+    component: 'Select',
+    componentProps: {
+      options: [
+        { label: '是', value: true },
+        { label: '否', value: false },
+      ],
+      style: 'width:100%',
+    },
+    colProps: { span: 6 },
+  },
+  {
+    field: 'isLeader',
+    label: '是否部门负责人',
     component: 'Select',
     componentProps: {
       options: [
@@ -435,7 +449,7 @@ export const userSchemas: FormSchema[] = [
   },
   {
     field: 'lockoutEnabled',
-    label: '登录失败后锁定帐户',
+    label: '登录失败后锁定',
     component: 'RadioButtonGroup',
     componentProps: {
       options: [
@@ -513,7 +527,7 @@ export const userDetailSchemas: DescItem[] = [
     field: 'status',
     render: (value) => {
       if (value === Status.Valid) {
-        return commonTagRender('blue', '正常');
+        return commonTagRender('green', '正常');
       } else {
         return commonTagRender('red', '冻结');
       }
@@ -601,3 +615,16 @@ export const userLockSchemas: FormSchema[] = [
     ],
   },
 ];
+
+export const getIsLeaderOptions = (): OptionsItem[] => {
+  return [
+    {
+      label: '是',
+      value: true,
+    },
+    {
+      label: '否',
+      value: false,
+    },
+  ];
+};
